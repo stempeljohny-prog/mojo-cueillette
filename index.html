@@ -463,7 +463,26 @@ function buildDateTabs(){
   </div>`;
 }
 window._sess=function(dk){state.activeSession=dk;renderMain();};
-window._newSess=function(){state.activeSession=todayKey();renderMain();};
+window._newSess=function(){
+  // Crée un input date invisible et le déclenche
+  const inp=document.createElement('input');
+  inp.type='date';
+  inp.value=todayKey();
+  inp.style.position='fixed';inp.style.opacity='0';inp.style.top='50%';inp.style.left='50%';
+  document.body.appendChild(inp);
+  inp.addEventListener('change',function(){
+    const dk=this.value;
+    if(!dk){document.body.removeChild(inp);return;}
+    if(!state.sessions[dk]) state.sessions[dk]={};
+    state.activeSession=dk;
+    document.body.removeChild(inp);
+    scheduleSave();renderMain();
+  });
+  inp.addEventListener('blur',function(){
+    setTimeout(()=>{if(document.body.contains(inp))document.body.removeChild(inp);},200);
+  });
+  inp.click();inp.focus();
+};
 window._delSess=function(e,dk){e.stopPropagation();if(!confirm('Supprimer cette session ?'))return;delete state.sessions[dk];if(state.activeSession===dk)state.activeSession=todayKey();scheduleSave();renderMain();};
 
 // ── HARVEST ───────────────────────────────────────────────────────────
