@@ -18,33 +18,24 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-
 header{background:var(--text);color:#fff;padding:14px 20px 10px;position:sticky;top:0;z-index:100;display:flex;align-items:center}
 header h1{font-family:'DM Serif Display',serif;font-size:1.35rem;font-weight:400;flex:1}
-.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
 .header-date{font-size:.72rem;color:rgba(255,255,255,.5)}
-.sync-status{font-size:.68rem;padding:2px 8px;border-radius:10px;font-weight:500}
+.sync-status{font-size:.68rem;padding:2px 8px;border-radius:10px;font-weight:500;margin-top:3px;white-space:nowrap}
 .sync-status.ok{background:rgba(138,184,90,.25);color:#8ab85a}
 .sync-status.syncing{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
 .sync-status.error{background:rgba(192,57,43,.25);color:#e74c3c}
-
 .tabs{display:flex;background:var(--text);padding:0 16px 12px;gap:6px;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1.5px solid rgba(255,255,255,.25);color:rgba(255,255,255,.65);font-size:.82rem;font-weight:500;cursor:pointer;background:transparent;transition:all .2s}
 .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
-
 main{padding:16px;max-width:600px;margin:0 auto}
-
-/* DATE TABS */
 .date-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none}
 .date-tabs::-webkit-scrollbar{display:none}
 .date-tab{flex-shrink:0;padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:.78rem;cursor:pointer;font-weight:500;white-space:nowrap;transition:all .15s;display:flex;align-items:center;gap:5px}
 .date-tab.active{background:var(--text);border-color:var(--text);color:#fff}
-.date-tab .del-date{font-size:.7rem;opacity:.6;margin-left:2px;padding:0 2px}
-.date-tab.active .del-date{opacity:.8}
+.date-tab .del-date{font-size:.7rem;opacity:.6;padding:0 2px}
 .date-tab-new{border-style:dashed;color:var(--accent);border-color:var(--accent2)}
-
-/* BUDGET */
 .budget-card{background:var(--surface);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:var(--shadow);border:1px solid var(--border)}
 .budget-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .budget-label{font-size:.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:.8px}
@@ -62,28 +53,20 @@ main{padding:16px;max-width:600px;margin:0 auto}
 .budget-remaining.over{color:var(--danger)}
 .budget-remaining.warn{color:var(--warning)}
 .budget-remaining.ok{color:var(--accent)}
-
-/* SEARCH */
 .search-bar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:10px}
 .search-bar input{flex:1;border:none;background:transparent;font-family:inherit;font-size:.9rem;color:var(--text)}
 .search-bar input:focus{outline:none}
-
 .section-title{font-size:.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
 .section-title button{font-size:.75rem;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:600}
-
-/* FLOWER ROWS */
 .flower-list{display:flex;flex-direction:column;gap:7px;margin-bottom:16px}
 .flower-row{background:var(--surface);border-radius:11px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);border:1px solid var(--border);transition:border-color .2s}
 .flower-row.has-qty{border-color:var(--accent2);background:#f7fbf3}
 .flower-row.dragging{opacity:.35;background:var(--surface2)}
 .flower-row.drag-over-h{border-color:var(--accent);border-style:dashed}
 .harvest-handle{cursor:grab;color:#ccc;font-size:1.1rem;padding:0 2px;touch-action:none;user-select:none;flex-shrink:0}
-.harvest-handle:active{cursor:grabbing;color:var(--accent)}
 .flower-info{flex:1;min-width:0}
 .flower-name{font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .flower-price{font-size:.75rem;color:var(--text2)}
-
-/* QTY */
 .qty-ctrl{display:flex;align-items:center;background:var(--surface2);border-radius:9px;overflow:hidden;border:1px solid var(--border)}
 .qty-btn{width:36px;height:38px;border:none;background:transparent;font-size:1.2rem;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center;user-select:none}
 .qty-btn:active{background:var(--border)}
@@ -92,14 +75,10 @@ main{padding:16px;max-width:600px;margin:0 auto}
 .qty-input:focus{outline:none;background:rgba(92,138,60,.08)}
 .flower-subtotal{font-weight:700;font-size:.85rem;color:var(--accent);min-width:46px;text-align:right}
 .flower-subtotal.zero{color:var(--border)}
-
-/* FLORIST SELECTOR */
 .florist-selector{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
 .florist-selector::-webkit-scrollbar{display:none}
 .fs-btn{flex-shrink:0;padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:.8rem;cursor:pointer;font-weight:500;transition:all .15s}
 .fs-btn.active{background:var(--text);border-color:var(--text);color:#fff}
-
-/* RÉCAP */
 .recap-card{background:var(--text);color:#fff;border-radius:var(--radius);padding:16px;margin-bottom:14px}
 .recap-title{font-family:'DM Serif Display',serif;font-size:1.1rem;margin-bottom:12px;opacity:.9}
 .recap-row{display:flex;justify-content:space-between;font-size:.86rem;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.1)}
@@ -113,74 +92,56 @@ main{padding:16px;max-width:600px;margin:0 auto}
 .sf-budget-fill{height:100%;border-radius:6px;background:var(--accent)}
 .sf-budget-fill.warn{background:var(--warning)}
 .sf-budget-fill.over{background:var(--danger)}
-
-/* CATALOGUE */
 .catalog-row{background:var(--surface);border-radius:9px;padding:9px 12px;display:flex;align-items:center;gap:8px;border:1px solid var(--border);margin-bottom:5px;transition:background .15s}
 .catalog-row.selected{background:#f0f8ea;border-color:var(--accent2)}
 .catalog-row input[type=text]{border:none;background:transparent;font-family:inherit;font-size:.88rem;color:var(--text);flex:1;min-width:0}
 .catalog-row input[type=text]:focus{outline:none;border-bottom:1.5px solid var(--accent)}
 .catalog-row input[type=number]{border:none;background:transparent;font-family:inherit;font-size:.88rem;font-weight:600;color:var(--accent);width:56px;text-align:right;-moz-appearance:textfield;appearance:textfield}
 .catalog-row input[type=number]::-webkit-outer-spin-button,.catalog-row input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
-.catalog-row input[type=number]:focus{outline:none}
 .check-toggle{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
 .check-toggle.on{background:var(--accent);border-color:var(--accent);color:#fff;font-size:.85rem}
 .del-btn{background:none;border:none;color:var(--danger);font-size:1rem;cursor:pointer;padding:4px;flex-shrink:0}
-
 .add-row{display:flex;gap:7px;margin-top:10px}
 .add-row input{flex:1;padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.86rem;background:var(--surface);color:var(--text)}
 .add-row input:focus{outline:none;border-color:var(--accent)}
 .btn-add{padding:9px 14px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-family:inherit;font-size:.86rem;font-weight:600;cursor:pointer;flex-shrink:0}
-
 .florist-mgmt-row{background:var(--surface);border-radius:9px;padding:9px 12px;display:flex;align-items:center;gap:8px;border:1px solid var(--border);margin-bottom:5px}
 .florist-mgmt-row input{flex:1;border:none;background:transparent;font-family:inherit;font-size:.88rem;color:var(--text)}
 .florist-mgmt-row input:focus{outline:none;border-bottom:1.5px solid var(--accent)}
-
 .save-section{background:var(--surface);border-radius:var(--radius);padding:16px;margin-bottom:14px;border:1px solid var(--border);box-shadow:var(--shadow)}
 .save-title{font-size:.75rem;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);margin-bottom:10px}
 .btn-reset{width:100%;padding:12px;border:1.5px solid var(--border);border-radius:11px;background:transparent;font-family:inherit;font-size:.86rem;color:var(--text2);cursor:pointer;margin-bottom:7px}
 .btn-export{width:100%;padding:12px;border:none;border-radius:11px;background:var(--text);font-family:inherit;font-size:.86rem;color:#fff;font-weight:600;cursor:pointer;margin-bottom:7px}
 .btn-import{width:100%;padding:12px;border:1.5px solid var(--accent);border-radius:11px;background:transparent;font-family:inherit;font-size:.86rem;color:var(--accent);font-weight:600;cursor:pointer;margin-bottom:7px}
-
 .hint{font-size:.73rem;color:var(--text2);margin-bottom:10px;padding:8px 12px;background:var(--surface2);border-radius:8px;line-height:1.5}
-
-/* LOADING */
-#loadingScreen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px}
-#loadingScreen h2{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--text)}
-.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:#fff;padding:10px 20px;border-radius:20px;font-size:.84rem;transition:transform .3s;z-index:9999;pointer-events:none}
 #toast.show{transform:translateX(-50%) translateY(0)}
 .empty{text-align:center;color:var(--text2);font-size:.88rem;padding:30px 0}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:40px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-
-<div id="loadingScreen">
-  <div class="spinner"></div>
-  <h2>🌸 Chargement…</h2>
-</div>
-
 <header>
   <div style="flex:1">
     <h1>🌸 Mojo Cueillette</h1>
     <div class="header-date" id="headerDate"></div>
   </div>
-  <div class="header-right">
+  <div style="display:flex;flex-direction:column;align-items:flex-end">
     <div class="sync-status syncing" id="syncStatus">⟳ Connexion…</div>
   </div>
 </header>
 <div class="tabs" id="tabBar"></div>
-<main id="mainContent"></main>
+<main id="mainContent"><div class="spinner"></div></main>
 <div id="toast"></div>
-<input type="file" id="importInput" accept=".json" style="display:none" onchange="importJSON(this)">
+<input type="file" id="importInput" accept=".json" style="display:none" onchange="window._importJSON(this)">
 
-<!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-const firebaseConfig = {
+// ── FIREBASE ──────────────────────────────────────────────────────────
+const app = initializeApp({
   apiKey: "AIzaSyAx8HnXkoZ51Y6hbx0XDc1RqO8mw8qnawo",
   authDomain: "mojo-cueillette.firebaseapp.com",
   databaseURL: "https://mojo-cueillette-default-rtdb.europe-west1.firebasedatabase.app",
@@ -188,56 +149,16 @@ const firebaseConfig = {
   storageBucket: "mojo-cueillette.firebasestorage.app",
   messagingSenderId: "154929802754",
   appId: "1:154929802754:web:f7b22385beee1d0356811b"
-};
-
-const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
+});
+const db = getDatabase(app);
 const ROOT = 'mojo';
 
-// ── CATALOGUE MOJO 2026 ───────────────────────────────────────────────
-const MOJO_BASE = [
-  'Achillée mix','Achillée perle','Achillée ptarmica','Achillée filipendula',
-  'Ageratum','Agrostemma – Nielle','Alchemille','Allium','Alstroemere',
-  'Amarante grande','Ammi majus','Ammobium','Ancolie','Anémone','Aneth',
-  'Aster','Basilic','Bupleurum','Camomille','Campanule','Cameline','Célosie',
-  'Centaurée','Cosmos','Cotinus','Cresson','Cynoglossum','Dahlia géant',
-  'Dahlia moyen','Dahlia petit','Delphinium vivace grand','Delphinium annuel',
-  'Digitale','Echinacée','Eryngium','Euphorbe','Framboisier','Géum','Giroflée',
-  'Glaieul','Godetia','Gomphrena','Gypsophile annuel','Gypsophile vivace',
-  'Hypericum','Immortelle','Iris','Julienne des dames','Lavatère annuelle',
-  'Lavatère vivace','Lisianthus','Marguerite double','Menthe des montagnes',
-  'Muflier madame Butterfly','Muflier simple','Narcisse double grand',
-  'Narcisse simple petit','Nigelle','Oeillet de poète','Oeillet chabaud',
-  'Origan','Orlaya','Panicum Frosted Explosion','Phlox crème brûlée',
-  'Physocarpus','Pivoine','Renoncule','Rudbeckia','Saponaire','Sauge hormine',
-  'Sedum','Scabieuse annuelle','Scabieuse vivace','Solidago','Statice latifolium',
-  'Statice limonium',"Tagète oeillet d'inde","Tagète rose d'inde",
-  'Tournesol petit','Tournesol gros','Tulipe double','Véronique','Zinnia gros','Zinnia petit'
-];
-const MOJO_PRICES = {
-  'Achillée mix':0.60,'Achillée perle':0.70,'Achillée ptarmica':0.50,'Achillée filipendula':0.70,
-  'Ageratum':0.50,'Agrostemma – Nielle':0.50,'Alchemille':0.50,'Allium':1.00,'Alstroemere':0.70,
-  'Amarante grande':0.80,'Ammi majus':0.65,'Ammobium':0.55,'Ancolie':0.70,'Anémone':0.70,'Aneth':0.60,
-  'Aster':0.70,'Basilic':0.60,'Bupleurum':0.70,'Camomille':0.70,'Campanule':0.90,'Cameline':0.60,
-  'Célosie':0.70,'Centaurée':0.40,'Cosmos':0.60,'Cotinus':0.70,'Cresson':0.55,'Cynoglossum':0.60,
-  'Dahlia géant':1.40,'Dahlia moyen':1.10,'Dahlia petit':0.80,'Delphinium vivace grand':1.00,
-  'Delphinium annuel':0.80,'Digitale':0.80,'Echinacée':0.70,'Eryngium':0.85,'Euphorbe':0.70,
-  'Framboisier':0.55,'Géum':0.50,'Giroflée':0.80,'Glaieul':1.00,'Godetia':0.65,'Gomphrena':0.40,
-  'Gypsophile annuel':0.70,'Gypsophile vivace':0.90,'Hypericum':0.70,'Immortelle':0.70,'Iris':0.80,
-  'Julienne des dames':0.60,'Lavatère annuelle':0.70,'Lavatère vivace':0.80,'Lisianthus':1.20,
-  'Marguerite double':0.60,'Menthe des montagnes':0.60,'Muflier madame Butterfly':0.80,'Muflier simple':0.80,
-  'Narcisse double grand':0.70,'Narcisse simple petit':0.50,'Nigelle':0.55,'Oeillet de poète':0.65,
-  'Oeillet chabaud':0.60,'Origan':0.40,'Orlaya':0.60,'Panicum Frosted Explosion':0.35,
-  'Phlox crème brûlée':0.50,'Physocarpus':0.55,'Pivoine':1.50,'Renoncule':0.80,'Rudbeckia':0.60,
-  'Saponaire':0.60,'Sauge hormine':0.50,'Sedum':0.70,'Scabieuse annuelle':0.60,'Scabieuse vivace':0.70,
-  'Solidago':0.70,'Statice latifolium':0.80,'Statice limonium':0.70,"Tagète oeillet d'inde":0.50,
-  "Tagète rose d'inde":0.70,'Tournesol petit':0.80,'Tournesol gros':1.00,'Tulipe double':0.80,
-  'Véronique':0.50,'Zinnia gros':0.70,'Zinnia petit':0.50
-};
+// ── CATALOGUE ─────────────────────────────────────────────────────────
+const MOJO_BASE = ['Achillée mix','Achillée perle','Achillée ptarmica','Achillée filipendula','Ageratum','Agrostemma – Nielle','Alchemille','Allium','Alstroemere','Amarante grande','Ammi majus','Ammobium','Ancolie','Anémone','Aneth','Aster','Basilic','Bupleurum','Camomille','Campanule','Cameline','Célosie','Centaurée','Cosmos','Cotinus','Cresson','Cynoglossum','Dahlia géant','Dahlia moyen','Dahlia petit','Delphinium vivace grand','Delphinium annuel','Digitale','Echinacée','Eryngium','Euphorbe','Framboisier','Géum','Giroflée','Glaieul','Godetia','Gomphrena','Gypsophile annuel','Gypsophile vivace','Hypericum','Immortelle','Iris','Julienne des dames','Lavatère annuelle','Lavatère vivace','Lisianthus','Marguerite double','Menthe des montagnes','Muflier madame Butterfly','Muflier simple','Narcisse double grand','Narcisse simple petit','Nigelle','Oeillet de poète','Oeillet chabaud','Origan','Orlaya','Panicum Frosted Explosion','Phlox crème brûlée','Physocarpus','Pivoine','Renoncule','Rudbeckia','Saponaire','Sauge hormine','Sedum','Scabieuse annuelle','Scabieuse vivace','Solidago','Statice latifolium','Statice limonium',"Tagète oeillet d'inde","Tagète rose d'inde",'Tournesol petit','Tournesol gros','Tulipe double','Véronique','Zinnia gros','Zinnia petit'];
+const MOJO_PRICES = {'Achillée mix':0.60,'Achillée perle':0.70,'Achillée ptarmica':0.50,'Achillée filipendula':0.70,'Ageratum':0.50,'Agrostemma – Nielle':0.50,'Alchemille':0.50,'Allium':1.00,'Alstroemere':0.70,'Amarante grande':0.80,'Ammi majus':0.65,'Ammobium':0.55,'Ancolie':0.70,'Anémone':0.70,'Aneth':0.60,'Aster':0.70,'Basilic':0.60,'Bupleurum':0.70,'Camomille':0.70,'Campanule':0.90,'Cameline':0.60,'Célosie':0.70,'Centaurée':0.40,'Cosmos':0.60,'Cotinus':0.70,'Cresson':0.55,'Cynoglossum':0.60,'Dahlia géant':1.40,'Dahlia moyen':1.10,'Dahlia petit':0.80,'Delphinium vivace grand':1.00,'Delphinium annuel':0.80,'Digitale':0.80,'Echinacée':0.70,'Eryngium':0.85,'Euphorbe':0.70,'Framboisier':0.55,'Géum':0.50,'Giroflée':0.80,'Glaieul':1.00,'Godetia':0.65,'Gomphrena':0.40,'Gypsophile annuel':0.70,'Gypsophile vivace':0.90,'Hypericum':0.70,'Immortelle':0.70,'Iris':0.80,'Julienne des dames':0.60,'Lavatère annuelle':0.70,'Lavatère vivace':0.80,'Lisianthus':1.20,'Marguerite double':0.60,'Menthe des montagnes':0.60,'Muflier madame Butterfly':0.80,'Muflier simple':0.80,'Narcisse double grand':0.70,'Narcisse simple petit':0.50,'Nigelle':0.55,'Oeillet de poète':0.65,'Oeillet chabaud':0.60,'Origan':0.40,'Orlaya':0.60,'Panicum Frosted Explosion':0.35,'Phlox crème brûlée':0.50,'Physocarpus':0.55,'Pivoine':1.50,'Renoncule':0.80,'Rudbeckia':0.60,'Saponaire':0.60,'Sauge hormine':0.50,'Sedum':0.70,'Scabieuse annuelle':0.60,'Scabieuse vivace':0.70,'Solidago':0.70,'Statice latifolium':0.80,'Statice limonium':0.70,"Tagète oeillet d'inde":0.50,"Tagète rose d'inde":0.70,'Tournesol petit':0.80,'Tournesol gros':1.00,'Tulipe double':0.80,'Véronique':0.50,'Zinnia gros':0.70,'Zinnia petit':0.50};
 
 function makeMojoFlowers(){
-  return [...MOJO_BASE].sort((a,b)=>a.localeCompare(b,'fr'))
-    .map((name,i)=>({id:'f'+i,name,price:MOJO_PRICES[name]||0.60,active:false}));
+  return [...MOJO_BASE].sort((a,b)=>a.localeCompare(b,'fr')).map((name,i)=>({id:'f'+i,name,price:MOJO_PRICES[name]||0.60,active:false}));
 }
 
 const todayKey = ()=>new Date().toISOString().slice(0,10);
@@ -254,10 +175,8 @@ function defaultState(){
   };
 }
 
-// ── STATE LOCAL (UI seulement) ─────────────────────────────────────────
 let state = defaultState();
 let saveTimer = null;
-let isRemoteUpdate = false;
 
 // ── FIREBASE SYNC ─────────────────────────────────────────────────────
 function setSyncStatus(s){
@@ -267,60 +186,70 @@ function setSyncStatus(s){
   else{el.textContent='⚠ Hors ligne';el.className='sync-status error';}
 }
 
-function saveToFirebase(){
+function pushToFirebase(){
   setSyncStatus('syncing');
-  const data = {
-    flowers: state.flowers,
-    florists: state.florists,
-    sessions: state.sessions,
-  };
-  set(ref(db, ROOT), data)
+  set(ref(db,ROOT),{flowers:state.flowers,florists:state.florists,sessions:state.sessions})
     .then(()=>setSyncStatus('ok'))
     .catch(()=>setSyncStatus('error'));
 }
 
 function scheduleSave(){
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveToFirebase, 800);
+  saveTimer=setTimeout(pushToFirebase,800);
 }
 
-// Écoute les changements Firebase en temps réel
-onValue(ref(db, ROOT), (snapshot)=>{
-  const data = snapshot.val();
-  if(!data){ 
-    // Première fois : on pousse le state par défaut
-    saveToFirebase();
-    document.getElementById('loadingScreen').style.display='none';
-    renderMain();
-    return;
+// Écoute Firebase en temps réel
+onValue(ref(db,ROOT),(snapshot)=>{
+  try {
+    const data=snapshot.val();
+    if(!data){
+      pushToFirebase();
+    } else {
+      // ── FIX : on s'assure que chaque session a bien quantities défini ──
+      if(data.sessions){
+        Object.keys(data.sessions).forEach(dk=>{
+          if(!data.sessions[dk]) data.sessions[dk]={quantities:{},flowerOrder:[]};
+          if(!data.sessions[dk].quantities) data.sessions[dk].quantities={};
+          if(!data.sessions[dk].flowerOrder) data.sessions[dk].flowerOrder=[];
+        });
+      }
+      if(data.flowers && Array.isArray(data.flowers)) state.flowers=data.flowers;
+      if(data.florists && Array.isArray(data.florists)) state.florists=data.florists;
+      if(data.sessions) state.sessions=data.sessions;
+    }
+    setSyncStatus('ok');
+  } catch(e){
+    console.error('Firebase parse error',e);
+    setSyncStatus('error');
   }
-  // Mise à jour depuis Firebase
-  state.flowers  = data.flowers  || state.flowers;
-  state.florists = data.florists || state.florists;
-  state.sessions = data.sessions || state.sessions;
-  setSyncStatus('ok');
-  document.getElementById('loadingScreen').style.display='none';
   renderMain();
-}, (error)=>{
+},(error)=>{
+  console.error('Firebase error',error);
   setSyncStatus('error');
-  document.getElementById('loadingScreen').style.display='none';
   renderMain();
 });
 
 // ── HELPERS ───────────────────────────────────────────────────────────
 function getSession(dk){
-  if(!state.sessions[dk]) state.sessions[dk]={quantities:{},flowerOrder:state.flowers.filter(f=>f.active).map(f=>f.id)};
+  if(!state.sessions[dk]) state.sessions[dk]={quantities:{},flowerOrder:[]};
+  if(!state.sessions[dk].quantities) state.sessions[dk].quantities={};
+  if(!state.sessions[dk].flowerOrder) state.sessions[dk].flowerOrder=[];
   return state.sessions[dk];
 }
 function currentSession(){ return getSession(state.activeSession); }
-function getQty(fid,flid){ return (currentSession().quantities[fid]||{})[flid]||0; }
+
+// ── FIX PRINCIPAL : toujours utiliser || {} pour éviter undefined ──
+function getQty(fid,flid){
+  const sess=currentSession();
+  return ((sess.quantities||{})[fid]||{})[flid]||0;
+}
 
 function setQty(fid,flid,v){
   const sess=currentSession();
+  if(!sess.quantities) sess.quantities={};
   if(!sess.quantities[fid]) sess.quantities[fid]={};
   sess.quantities[fid][flid]=Math.max(0,parseInt(v)||0);
   scheduleSave();
-  // DOM update
   const flower=state.flowers.find(f=>f.id===flid);
   const val=sess.quantities[fid][flid];
   const sub=document.getElementById('sub_'+flid);
@@ -342,22 +271,23 @@ function changeQty(fid,flid,d){
 
 function floristTotal(fid){
   const sess=currentSession();
-  return state.flowers.reduce((s,f)=>s+((sess.quantities[fid]||{})[f.id]||0)*f.price,0);
+  const qty=sess.quantities||{};
+  return (state.flowers||[]).reduce((s,f)=>s+(((qty[fid])||{})[f.id]||0)*f.price,0);
 }
 
 function sessionFlowerOrder(){
   const sess=currentSession();
-  const active=state.flowers.filter(f=>f.active);
-  const ordered=[];
+  const active=(state.flowers||[]).filter(f=>f.active);
   const activeIds=new Set(active.map(f=>f.id));
-  (sess.flowerOrder||[]).forEach(id=>{ if(activeIds.has(id)) ordered.push(id); });
-  active.forEach(f=>{ if(!ordered.includes(f.id)) ordered.push(f.id); });
+  const ordered=[];
+  (sess.flowerOrder||[]).forEach(id=>{if(activeIds.has(id)) ordered.push(id);});
+  active.forEach(f=>{if(!ordered.includes(f.id)) ordered.push(f.id);});
   sess.flowerOrder=ordered;
   return ordered.map(id=>state.flowers.find(f=>f.id===id)).filter(Boolean);
 }
 
 function updateBudgetBar(fid,total){
-  const c=state.florists.find(x=>x.id===fid); if(!c) return;
+  const c=(state.florists||[]).find(x=>x.id===fid); if(!c) return;
   const b=c.budget||0,pct=b>0?Math.min((total/b)*100,100):0,rem=b-total;
   const oc=total>b?'over':total>b*.85?'warn':'ok';
   const bc=total>b?'over':total>b*.85?'warn':'';
@@ -368,9 +298,9 @@ function updateBudgetBar(fid,total){
   if(e('budgetPct')) e('budgetPct').textContent=pct.toFixed(0)+'% du budget';
 }
 
-function showToast(msg='Enregistré'){
+function showToast(msg){
   const t=document.getElementById('toast');
-  t.textContent='✓ '+msg;t.classList.add('show');
+  t.textContent='✓ '+(msg||'Enregistré');t.classList.add('show');
   clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);
 }
 
@@ -383,33 +313,30 @@ function renderTabs(){
     {id:'harvest',label:'🌿 Cueillette'},{id:'summary',label:'📋 Récap'},
     {id:'catalog',label:'✏️ Fleurs'},{id:'florists',label:'🏪 Fleuristes'},
     {id:'backup',label:'💾 Sauvegarde'},
-  ].map(t=>`<button class="tab ${state.activeTab===t.id?'active':''}" onclick="switchTab('${t.id}')">${t.label}</button>`).join('');
+  ].map(t=>`<button class="tab ${state.activeTab===t.id?'active':''}" onclick="window._tab('${t.id}')">${t.label}</button>`).join('');
 }
-window.switchTab=function(id){ state.activeTab=id; renderTabs(); renderMain(); };
+window._tab=function(id){ state.activeTab=id; renderTabs(); renderMain(); };
 
 // ── DATE TABS ─────────────────────────────────────────────────────────
 function formatDateKey(dk){
   const [y,m,d]=dk.split('-');
-  const date=new Date(y,m-1,d);
-  return dk===todayKey()?'Aujourd\'hui':date.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
+  return dk===todayKey()?'Aujourd\'hui':new Date(y,m-1,d).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
 }
-
 function buildDateTabs(){
   const keys=Object.keys(state.sessions).sort((a,b)=>b.localeCompare(a));
   const today=todayKey();
   if(!keys.includes(today)) keys.unshift(today);
   return `<div class="date-tabs">
-    ${keys.map(dk=>`<button class="date-tab ${dk===state.activeSession?'active':''}" onclick="switchSession('${dk}')">
+    ${keys.map(dk=>`<button class="date-tab ${dk===state.activeSession?'active':''}" onclick="window._sess('${dk}')">
       ${formatDateKey(dk)}
-      ${dk!==today?`<span class="del-date" onclick="deleteSession(event,'${dk}')">✕</span>`:''}
+      ${dk!==today?`<span class="del-date" onclick="window._delSess(event,'${dk}')">✕</span>`:''}
     </button>`).join('')}
-    <button class="date-tab date-tab-new" onclick="newSession()">+ Nouvelle date</button>
+    <button class="date-tab date-tab-new" onclick="window._newSess()">+ Nouvelle date</button>
   </div>`;
 }
-
-window.switchSession=function(dk){ state.activeSession=dk; renderMain(); };
-window.newSession=function(){ state.activeSession=todayKey(); renderMain(); };
-window.deleteSession=function(e,dk){
+window._sess=function(dk){ state.activeSession=dk; renderMain(); };
+window._newSess=function(){ state.activeSession=todayKey(); renderMain(); };
+window._delSess=function(e,dk){
   e.stopPropagation();
   if(!confirm('Supprimer cette session ?')) return;
   delete state.sessions[dk];
@@ -419,13 +346,15 @@ window.deleteSession=function(e,dk){
 
 // ── HARVEST ───────────────────────────────────────────────────────────
 function buildHarvest(){
-  const c=state.florists.find(x=>x.id===state.activeFlorist)||state.florists[0];
-  if(!c) return '<div class="empty">Ajoutez un fleuriste</div>';
+  const florists=state.florists||[];
+  const c=florists.find(x=>x.id===state.activeFlorist)||florists[0];
+  if(!c) return '<div class="empty">Ajoutez un fleuriste dans 🏪</div>';
   state.activeFlorist=c.id;
   const ordered=sessionFlowerOrder();
 
-  if(!ordered.length) return buildDateTabs()+`
-    <div class="florist-selector">${state.florists.map(x=>`<button class="fs-btn ${x.id===c.id?'active':''}" onclick="selectFlorist('${x.id}')">${x.name}</button>`).join('')}</div>
+  const floristSel=`<div class="florist-selector">${florists.map(x=>`<button class="fs-btn ${x.id===c.id?'active':''}" onclick="window._selF('${x.id}')">${x.name}</button>`).join('')}</div>`;
+
+  if(!ordered.length) return buildDateTabs()+floristSel+`
     <div class="empty" style="padding:40px 20px">
       <div style="font-size:2rem;margin-bottom:10px">🌸</div>
       <div style="font-weight:600;margin-bottom:6px">Aucune fleur sélectionnée</div>
@@ -440,32 +369,26 @@ function buildHarvest(){
   const rows=ordered.map(f=>{
     const qty=getQty(c.id,f.id);
     return `<div class="flower-row${qty>0?' has-qty':''}" id="row_${f.id}"
-        draggable="true"
-        ondragstart="hDragStart(event,'${f.id}')"
-        ondragover="hDragOver(event,'${f.id}')"
-        ondrop="hDragDrop(event,'${f.id}')"
-        ondragend="hDragEnd(event)">
+        draggable="true" ondragstart="window._hds(event,'${f.id}')"
+        ondragover="window._hdo(event,'${f.id}')" ondrop="window._hdd(event,'${f.id}')" ondragend="window._hde()">
       <span class="harvest-handle">⠿</span>
       <div class="flower-info">
         <div class="flower-name">${f.name}</div>
         <div class="flower-price">${f.price.toFixed(2)} €/u</div>
       </div>
       <div class="qty-ctrl">
-        <button class="qty-btn" onclick="changeQty('${c.id}','${f.id}',-1)">−</button>
+        <button class="qty-btn" onclick="window._cq('${c.id}','${f.id}',-1)">−</button>
         <input class="qty-input" id="qty_${f.id}" inputmode="numeric" pattern="[0-9]*"
           value="${qty}" onfocus="this.select()"
-          onchange="setQty('${c.id}','${f.id}',this.value)"
-          onblur="setQty('${c.id}','${f.id}',this.value)">
-        <button class="qty-btn" onclick="changeQty('${c.id}','${f.id}',1)">+</button>
+          onchange="window._sq('${c.id}','${f.id}',this.value)"
+          onblur="window._sq('${c.id}','${f.id}',this.value)">
+        <button class="qty-btn" onclick="window._cq('${c.id}','${f.id}',1)">+</button>
       </div>
       <div class="flower-subtotal${qty===0?' zero':''}" id="sub_${f.id}">${qty>0?(qty*f.price).toFixed(2)+'€':'—'}</div>
     </div>`;
   }).join('');
 
-  return buildDateTabs()+`
-    <div class="florist-selector">
-      ${state.florists.map(x=>`<button class="fs-btn ${x.id===c.id?'active':''}" onclick="selectFlorist('${x.id}')">${x.name}</button>`).join('')}
-    </div>
+  return buildDateTabs()+floristSel+`
     <div class="budget-card">
       <div class="budget-header">
         <div>
@@ -474,7 +397,7 @@ function buildHarvest(){
         </div>
         <div class="budget-set">
           <label>Budget</label>
-          <input type="number" value="${b}" min="0" step="5" onchange="setBudget('${c.id}',parseFloat(this.value)||0)"> €
+          <input type="number" value="${b}" min="0" step="5" onchange="window._sb('${c.id}',parseFloat(this.value)||0)"> €
         </div>
       </div>
       ${b>0?`<div class="progress-bar"><div class="progress-fill ${bc}" id="budgetFill" style="width:${pct}%"></div></div>
@@ -482,57 +405,37 @@ function buildHarvest(){
       <span class="budget-remaining ${oc}" id="budgetRem">${rem>=0?'Reste '+rem.toFixed(2)+' €':'Dépassé de '+Math.abs(rem).toFixed(2)+' €'}</span></div>`:''}
     </div>
     <div class="section-title">
-      <span>${ordered.length} variété${ordered.length>1?'s':''} • <a href="#" style="color:var(--accent);text-decoration:none" onclick="switchTab('catalog')">modifier</a></span>
-      <button onclick="resetSession()">Réinitialiser</button>
+      <span>${ordered.length} variété${ordered.length>1?'s':''} • <a href="#" style="color:var(--accent);text-decoration:none" onclick="window._tab('catalog')">modifier</a></span>
+      <button onclick="window._resetSess()">Réinitialiser</button>
     </div>
-    <div class="flower-list" id="harvestList">${rows}</div>`;
+    <div class="flower-list">${rows}</div>`;
 }
 
-window.selectFlorist=function(id){ state.activeFlorist=id; renderMain(); };
-window.setBudget=function(fid,v){ const c=state.florists.find(x=>x.id===fid); if(c){c.budget=v;scheduleSave();renderMain();} };
-window.resetSession=function(){
-  if(confirm('Remettre à zéro toutes les quantités de cette date ?')){
-    currentSession().quantities={}; scheduleSave(); renderMain();
-  }
+window._selF=function(id){ state.activeFlorist=id; renderMain(); };
+window._sb=function(fid,v){ const c=(state.florists||[]).find(x=>x.id===fid); if(c){c.budget=v;scheduleSave();renderMain();} };
+window._resetSess=function(){
+  if(confirm('Remettre à zéro toutes les quantités ?')){ currentSession().quantities={}; scheduleSave(); renderMain(); }
 };
-window.setQty=setQty;
-window.changeQty=changeQty;
+window._sq=setQty;
+window._cq=changeQty;
 
-// ── DRAG HARVEST ──────────────────────────────────────────────────────
-let hDragId=null;
-window.hDragStart=function(e,id){
-  hDragId=id; e.dataTransfer.effectAllowed='move';
-  setTimeout(()=>{ const el=document.getElementById('row_'+id); if(el) el.classList.add('dragging'); },0);
-};
-window.hDragOver=function(e,id){
-  e.preventDefault(); e.dataTransfer.dropEffect='move';
-  document.querySelectorAll('.flower-row').forEach(r=>r.classList.remove('drag-over-h'));
-  const el=document.getElementById('row_'+id); if(el) el.classList.add('drag-over-h');
-};
-window.hDragDrop=function(e,targetId){
-  e.preventDefault(); if(!hDragId||hDragId===targetId) return;
-  const sess=currentSession();
-  const order=sessionFlowerOrder().map(f=>f.id);
-  const from=order.indexOf(hDragId),to=order.indexOf(targetId);
-  if(from<0||to<0) return;
-  order.splice(from,1); order.splice(to,0,hDragId);
-  sess.flowerOrder=order; scheduleSave(); renderMain();
-};
-window.hDragEnd=function(){
-  document.querySelectorAll('.flower-row').forEach(r=>{r.classList.remove('dragging');r.classList.remove('drag-over-h');});
-  hDragId=null;
-};
+// Drag harvest
+let _hDragId=null;
+window._hds=function(e,id){ _hDragId=id; e.dataTransfer.effectAllowed='move'; setTimeout(()=>{const el=document.getElementById('row_'+id);if(el)el.classList.add('dragging');},0); };
+window._hdo=function(e,id){ e.preventDefault(); document.querySelectorAll('.flower-row').forEach(r=>r.classList.remove('drag-over-h')); const el=document.getElementById('row_'+id);if(el)el.classList.add('drag-over-h'); };
+window._hdd=function(e,tid){ e.preventDefault(); if(!_hDragId||_hDragId===tid) return; const sess=currentSession(); const order=sessionFlowerOrder().map(f=>f.id); const from=order.indexOf(_hDragId),to=order.indexOf(tid); if(from<0||to<0) return; order.splice(from,1);order.splice(to,0,_hDragId); sess.flowerOrder=order; scheduleSave(); renderMain(); };
+window._hde=function(){ document.querySelectorAll('.flower-row').forEach(r=>{r.classList.remove('dragging');r.classList.remove('drag-over-h');}); _hDragId=null; };
 
 // ── SUMMARY ───────────────────────────────────────────────────────────
 function buildSummary(){
-  const allKeys=Object.keys(state.sessions).sort((a,b)=>b.localeCompare(a));
-  if(!allKeys.length) return '<div class="empty">Aucune donnée</div>';
+  const allKeys=Object.keys(state.sessions||{}).sort((a,b)=>b.localeCompare(a));
   let html='',hasAny=false;
   allKeys.forEach(dk=>{
     const sess=state.sessions[dk];
-    const floristData=state.florists.map(c=>{
-      const items=state.flowers.filter(f=>((sess.quantities||{})[c.id]||{})[f.id]>0);
-      const total=state.flowers.reduce((s,f)=>s+(((sess.quantities||{})[c.id]||{})[f.id]||0)*f.price,0);
+    const qty=sess.quantities||{};
+    const floristData=(state.florists||[]).map(c=>{
+      const items=(state.flowers||[]).filter(f=>((qty[c.id]||{})[f.id]||0)>0);
+      const total=(state.flowers||[]).reduce((s,f)=>s+((qty[c.id]||{})[f.id]||0)*f.price,0);
       return {c,items,total};
     }).filter(x=>x.total>0);
     if(!floristData.length) return;
@@ -544,7 +447,7 @@ function buildSummary(){
         const b=c.budget||0,pct=b>0?Math.min((total/b)*100,100):0,bc=total>b?'over':total>b*.85?'warn':'';
         return `<div class="summary-florist">
           <div class="sf-name">${c.name}<span class="sf-total">${total.toFixed(2)} €${b>0?' / '+b.toFixed(0)+' €':''}</span></div>
-          ${items.map(f=>{const q=((sess.quantities[c.id])||{})[f.id]||0;return `<div class="sf-row"><span>${f.name} × ${q}</span><span>${(q*f.price).toFixed(2)} €</span></div>`;}).join('')}
+          ${items.map(f=>{const q=(qty[c.id]||{})[f.id]||0;return `<div class="sf-row"><span>${f.name} × ${q}</span><span>${(q*f.price).toFixed(2)} €</span></div>`;}).join('')}
           ${b>0?`<div class="sf-budget-bar"><div class="sf-budget-fill ${bc}" style="width:${pct}%"></div></div>`:''}
         </div>`;
       }).join('')}
@@ -552,122 +455,111 @@ function buildSummary(){
   });
   if(!hasAny) return '<div class="empty">Aucune quantité saisie</div>';
   return html+`
-    <button class="btn-export" onclick="shareSummary()">📤 Partager la session en cours</button>
-    <button class="btn-reset" onclick="resetAll()">🗑 Réinitialiser toutes les sessions</button>`;
+    <button class="btn-export" onclick="window._share()">📤 Partager la session en cours</button>
+    <button class="btn-reset" onclick="window._resetAll()">🗑 Réinitialiser toutes les sessions</button>`;
 }
-
-window.shareSummary=function(){
-  const sess=currentSession();
-  const lines=state.florists.map(c=>{
-    const items=state.flowers.filter(f=>((sess.quantities[c.id]||{})[f.id]||0)>0);
+window._share=function(){
+  const sess=currentSession(); const qty=sess.quantities||{};
+  const lines=(state.florists||[]).map(c=>{
+    const items=(state.flowers||[]).filter(f=>((qty[c.id]||{})[f.id]||0)>0);
     if(!items.length) return null;
-    const total=items.reduce((s,f)=>s+((sess.quantities[c.id]||{})[f.id]||0)*f.price,0);
-    return `${c.name}\n${items.map(f=>`  ${f.name} × ${(sess.quantities[c.id]||{})[f.id]} = ${((sess.quantities[c.id]||{})[f.id]*f.price).toFixed(2)}€`).join('\n')}\nTotal: ${total.toFixed(2)}€`;
+    const total=items.reduce((s,f)=>s+((qty[c.id]||{})[f.id]||0)*f.price,0);
+    return `${c.name}\n${items.map(f=>`  ${f.name} × ${(qty[c.id]||{})[f.id]} = ${((qty[c.id]||{})[f.id]*f.price).toFixed(2)}€`).join('\n')}\nTotal: ${total.toFixed(2)}€`;
   }).filter(Boolean);
   const txt=`Cueillette ${formatDateKey(state.activeSession)}\n\n${lines.join('\n\n')}`;
   if(navigator.share) navigator.share({title:'Cueillette Mojo',text:txt});
   else navigator.clipboard.writeText(txt).then(()=>showToast('Copié !'));
 };
-window.resetAll=function(){
+window._resetAll=function(){
   if(confirm('Supprimer toutes les sessions ?')){ state.sessions={}; scheduleSave(); renderMain(); }
 };
 
 // ── CATALOGUE ─────────────────────────────────────────────────────────
 function buildCatalog(){
-  const sorted=[...state.flowers].sort((a,b)=>a.name.localeCompare(b.name,'fr'));
-  const activeCount=state.flowers.filter(f=>f.active).length;
+  const sorted=[...(state.flowers||[])].sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+  const activeCount=(state.flowers||[]).filter(f=>f.active).length;
   const rows=sorted.map(f=>`
     <div class="catalog-row${f.active?' selected':''}" id="cr_${f.id}">
-      <div class="check-toggle ${f.active?'on':''}" onclick="toggleFlower('${f.id}')">${f.active?'✓':''}</div>
-      <input type="text" value="${f.name}" onchange="editFlower('${f.id}','name',this.value)" style="flex:1">
-      <input type="number" step="0.05" min="0" value="${f.price.toFixed(2)}" onchange="editFlower('${f.id}','price',parseFloat(this.value)||0)"> €
-      <button class="del-btn" onclick="deleteFlower('${f.id}')">✕</button>
+      <div class="check-toggle ${f.active?'on':''}" onclick="window._tog('${f.id}')">${f.active?'✓':''}</div>
+      <input type="text" value="${f.name}" onchange="window._ef('${f.id}','name',this.value)" style="flex:1">
+      <input type="number" step="0.05" min="0" value="${f.price.toFixed(2)}" onchange="window._ef('${f.id}','price',parseFloat(this.value)||0)"> €
+      <button class="del-btn" onclick="window._df('${f.id}')">✕</button>
     </div>`).join('');
   return `
     <div class="hint">✓ Cochez les variétés disponibles — elles apparaîtront dans 🌿 Cueillette.<br>
-    <span id="activeCount">${activeCount}</span> sélectionnée${activeCount>1?'s':''} sur ${state.flowers.length}.</div>
+    ${activeCount} sélectionnée${activeCount>1?'s':''} sur ${(state.flowers||[]).length}.</div>
     <div class="search-bar" style="margin-bottom:10px">
       <span>🔍</span>
-      <input id="catalogSearch" placeholder="Rechercher…" oninput="filterCatalog(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
-      <button id="clearSearch" onclick="clearCatalogSearch()" style="display:none;background:none;border:none;cursor:pointer;color:var(--text2)">✕</button>
+      <input id="catalogSearch" placeholder="Rechercher…" oninput="window._fc(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button id="clearSearch" onclick="window._fcc()" style="display:none;background:none;border:none;cursor:pointer;color:var(--text2)">✕</button>
     </div>
     <div class="section-title">
-      <span>Catalogue — ${state.flowers.length} variétés</span>
-      <button onclick="selectNone()">Tout décocher</button>
+      <span>Catalogue — ${(state.flowers||[]).length} variétés</span>
+      <button onclick="window._none()">Tout décocher</button>
     </div>
     <div id="catalogList">${rows}</div>
     <div class="add-row" style="margin-top:12px">
       <input id="nfName" placeholder="Nouvelle variété…">
       <input id="nfPrice" type="number" step="0.05" min="0" placeholder="0.00"
         style="width:75px;padding:9px 8px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.86rem;background:var(--surface);color:var(--text);-moz-appearance:textfield;appearance:textfield">
-      <button class="btn-add" onclick="addFlower()">+ Ajouter</button>
+      <button class="btn-add" onclick="window._af()">+ Ajouter</button>
     </div>`;
 }
-
-window.filterCatalog=function(q){
-  const val=q.toLowerCase();
-  document.querySelectorAll('#catalogList .catalog-row').forEach(row=>{
-    const ni=row.querySelector('input[type=text]'); if(!ni) return;
-    row.style.display=(!val||ni.value.toLowerCase().includes(val))?'':'none';
-  });
-  const btn=document.getElementById('clearSearch'); if(btn) btn.style.display=val?'':'none';
+window._fc=function(q){
+  const v=q.toLowerCase();
+  document.querySelectorAll('#catalogList .catalog-row').forEach(r=>{const n=r.querySelector('input[type=text]');if(n)r.style.display=(!v||n.value.toLowerCase().includes(v))?'':'none';});
+  const b=document.getElementById('clearSearch');if(b)b.style.display=v?'':'none';
 };
-window.clearCatalogSearch=function(){
-  const inp=document.getElementById('catalogSearch'); if(inp){inp.value='';inp.focus();}
-  window.filterCatalog('');
-};
-window.toggleFlower=function(id){
-  const f=state.flowers.find(x=>x.id===id); if(!f) return;
+window._fcc=function(){ const i=document.getElementById('catalogSearch');if(i){i.value='';i.focus();}window._fc(''); };
+window._tog=function(id){
+  const f=(state.flowers||[]).find(x=>x.id===id);if(!f)return;
   f.active=!f.active;
   const sess=currentSession();
   if(f.active&&!sess.flowerOrder.includes(id)) sess.flowerOrder.push(id);
   if(!f.active) sess.flowerOrder=sess.flowerOrder.filter(x=>x!==id);
-  scheduleSave(); renderMain();
+  scheduleSave();renderMain();
 };
-window.selectNone=function(){ state.flowers.forEach(f=>f.active=false); scheduleSave(); renderMain(); };
-window.editFlower=function(id,k,v){ const f=state.flowers.find(x=>x.id===id); if(f){f[k]=v;scheduleSave();} };
-window.deleteFlower=function(id){
-  if(confirm('Supprimer cette fleur ?')){ state.flowers=state.flowers.filter(f=>f.id!==id); scheduleSave(); renderMain(); }
-};
-window.addFlower=function(){
+window._none=function(){ (state.flowers||[]).forEach(f=>f.active=false); scheduleSave();renderMain(); };
+window._ef=function(id,k,v){ const f=(state.flowers||[]).find(x=>x.id===id);if(f){f[k]=v;scheduleSave();} };
+window._df=function(id){ if(confirm('Supprimer cette fleur ?')){state.flowers=state.flowers.filter(f=>f.id!==id);scheduleSave();renderMain();} };
+window._af=function(){
   const name=document.getElementById('nfName').value.trim();
   const price=parseFloat(document.getElementById('nfPrice').value)||0;
-  if(!name) return;
-  state.flowers.push({id:uid(),name,price,active:true}); scheduleSave(); renderMain();
+  if(!name)return;
+  state.flowers.push({id:uid(),name,price,active:true});scheduleSave();renderMain();
 };
 
 // ── FLEURISTES ────────────────────────────────────────────────────────
 function buildFlorists(){
   return `
-    <div class="section-title"><span>${state.florists.length} fleuriste(s)</span></div>
-    ${state.florists.map(c=>`
-      <div class="florist-mgmt-row">
-        <span>🏪</span>
-        <input value="${c.name}" onchange="editFlorist('${c.id}','name',this.value)">
+    <div class="section-title"><span>${(state.florists||[]).length} fleuriste(s)</span></div>
+    ${(state.florists||[]).map(c=>`
+      <div class="florist-mgmt-row"><span>🏪</span>
+        <input value="${c.name}" onchange="window._efl('${c.id}','name',this.value)">
         <input style="width:65px;text-align:right;font-weight:600;color:var(--accent);-moz-appearance:textfield;appearance:textfield"
-          type="number" value="${c.budget}" min="0" step="5" onchange="editFlorist('${c.id}','budget',parseFloat(this.value)||0)"> €
-        <button class="del-btn" onclick="deleteFlorist('${c.id}')">✕</button>
+          type="number" value="${c.budget}" min="0" step="5" onchange="window._efl('${c.id}','budget',parseFloat(this.value)||0)"> €
+        <button class="del-btn" onclick="window._dfl('${c.id}')">✕</button>
       </div>`).join('')}
     <div class="add-row" style="margin-top:12px">
       <input id="nflName" placeholder="Nom du fleuriste…">
       <input id="nflBudget" type="number" step="5" min="0" placeholder="100"
         style="width:75px;padding:9px 8px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.86rem;background:var(--surface);color:var(--text);-moz-appearance:textfield;appearance:textfield">
-      <button class="btn-add" onclick="addFlorist()">+ Ajouter</button>
+      <button class="btn-add" onclick="window._afl()">+ Ajouter</button>
     </div>`;
 }
-window.editFlorist=function(id,k,v){ const c=state.florists.find(x=>x.id===id); if(c){c[k]=v;scheduleSave();} };
-window.deleteFlorist=function(id){
-  if(state.florists.length<=1) return alert('Il faut au moins un fleuriste.');
+window._efl=function(id,k,v){ const c=(state.florists||[]).find(x=>x.id===id);if(c){c[k]=v;scheduleSave();} };
+window._dfl=function(id){
+  if((state.florists||[]).length<=1)return alert('Il faut au moins un fleuriste.');
   if(confirm('Supprimer ce fleuriste ?')){
     state.florists=state.florists.filter(c=>c.id!==id);
-    if(state.activeFlorist===id) state.activeFlorist=state.florists[0].id;
-    scheduleSave(); renderMain();
+    if(state.activeFlorist===id) state.activeFlorist=(state.florists[0]||{}).id;
+    scheduleSave();renderMain();
   }
 };
-window.addFlorist=function(){
-  const name=document.getElementById('nflName').value.trim()||`Fleuriste ${state.florists.length+1}`;
+window._afl=function(){
+  const name=document.getElementById('nflName').value.trim()||`Fleuriste ${(state.florists||[]).length+1}`;
   const budget=parseFloat(document.getElementById('nflBudget').value)||100;
-  state.florists.push({id:uid(),name,budget}); scheduleSave(); renderMain();
+  state.florists.push({id:uid(),name,budget});scheduleSave();renderMain();
 };
 
 // ── SAUVEGARDE ────────────────────────────────────────────────────────
@@ -676,69 +568,65 @@ function buildBackup(){
     <div class="save-section">
       <div class="save-title">☁️ Synchronisation Firebase</div>
       <p style="font-size:.84rem;color:var(--text2);margin-bottom:14px;line-height:1.6">
-        Toutes les données sont <strong>synchronisées automatiquement</strong> entre tous les téléphones via Firebase. Le statut est affiché en haut à droite.
+        Données synchronisées automatiquement entre tous les téléphones. Statut en haut à droite.
       </p>
-      <button class="btn-export" onclick="forceSave()">⟳ Forcer la synchronisation</button>
+      <button class="btn-export" onclick="pushToFirebase();showToast('Synchronisé !')">⟳ Forcer la synchronisation</button>
     </div>
     <div class="save-section">
-      <div class="save-title">💾 Sauvegarde locale (secours)</div>
-      <p style="font-size:.84rem;color:var(--text2);margin-bottom:14px;line-height:1.6">
-        Télécharge une copie .json de secours à garder dans Google Drive.
-      </p>
-      <button class="btn-export" onclick="exportJSON()">📥 Télécharger la sauvegarde</button>
-      <button class="btn-import" onclick="document.getElementById('importInput').click()">📂 Importer un fichier .json</button>
+      <div class="save-title">💾 Sauvegarde locale</div>
+      <p style="font-size:.84rem;color:var(--text2);margin-bottom:14px;line-height:1.6">Copie de secours à garder dans Google Drive.</p>
+      <button class="btn-export" onclick="window._exp()">📥 Télécharger .json</button>
+      <button class="btn-import" onclick="document.getElementById('importInput').click()">📂 Importer .json</button>
     </div>
     <div class="save-section">
-      <div class="save-title">⚠️ Réinitialisation complète</div>
-      <p style="font-size:.84rem;color:var(--text2);margin-bottom:14px;line-height:1.6">
-        Remet l'app à zéro. Attention : efface aussi Firebase.
-      </p>
-      <button class="btn-reset" onclick="hardReset()">Réinitialiser complètement</button>
+      <div class="save-title">⚠️ Réinitialisation</div>
+      <button class="btn-reset" onclick="window._hard()">Réinitialiser complètement</button>
     </div>`;
 }
-window.forceSave=function(){ saveToFirebase(); showToast('Synchronisation forcée'); };
-window.exportJSON=function(){
-  const data={flowers:state.flowers,florists:state.florists,sessions:state.sessions};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url; a.download=`mojo-${todayKey()}.json`; a.click();
-  URL.revokeObjectURL(url); showToast('Sauvegarde téléchargée !');
+window._exp=function(){
+  const blob=new Blob([JSON.stringify({flowers:state.flowers,florists:state.florists,sessions:state.sessions},null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download=`mojo-${todayKey()}.json`;a.click();URL.revokeObjectURL(url);showToast('Téléchargé !');
 };
-window.importJSON=function(input){
-  const file=input.files[0]; if(!file) return;
+window._importJSON=function(input){
+  const file=input.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=e=>{
     try{
       const imp=JSON.parse(e.target.result);
-      if(!imp.flowers||!imp.florists) throw new Error();
-      if(confirm('Importer et écraser Firebase avec cette sauvegarde ?')){
-        state.flowers=imp.flowers; state.florists=imp.florists; state.sessions=imp.sessions||{};
-        saveToFirebase(); renderMain(); showToast('Importé !');
+      if(!imp.flowers||!imp.florists)throw new Error();
+      if(confirm('Importer et écraser Firebase ?')){
+        state.flowers=imp.flowers;state.florists=imp.florists;state.sessions=imp.sessions||{};
+        pushToFirebase();renderMain();showToast('Importé !');
       }
-    }catch(e){ alert('Fichier invalide.'); }
+    }catch(e){alert('Fichier invalide.');}
   };
-  reader.readAsText(file); input.value='';
+  reader.readAsText(file);input.value='';
 };
-window.hardReset=function(){
-  if(confirm('⚠️ Effacer tout y compris Firebase ?')){
-    const s=defaultState();
-    state.flowers=s.flowers; state.florists=s.florists; state.sessions={};
-    saveToFirebase(); renderMain(); showToast('Réinitialisé');
+window._hard=function(){
+  if(confirm('⚠️ Tout effacer y compris Firebase ?')){
+    const s=defaultState();state.flowers=s.flowers;state.florists=s.florists;state.sessions={};
+    pushToFirebase();renderMain();showToast('Réinitialisé');
   }
 };
 
+// expose for backup button
+window.pushToFirebase=pushToFirebase;
+window.showToast=showToast;
+
 // ── RENDER ────────────────────────────────────────────────────────────
-window.renderMain=function(){
+function renderMain(){
   renderTabs();
   const m=document.getElementById('mainContent');
-  const b={harvest:buildHarvest,summary:buildSummary,catalog:buildCatalog,florists:buildFlorists,backup:buildBackup};
-  m.innerHTML=(b[state.activeTab]||buildHarvest)();
-};
-
-function renderMain(){ window.renderMain(); }
-
-if(!state.activeFlorist&&state.florists.length) state.activeFlorist=state.florists[0].id;
+  const builders={harvest:buildHarvest,summary:buildSummary,catalog:buildCatalog,florists:buildFlorists,backup:buildBackup};
+  try{
+    m.innerHTML=(builders[state.activeTab]||buildHarvest)();
+  }catch(e){
+    console.error('Render error',e);
+    m.innerHTML=`<div class="empty">Erreur d'affichage — réessaie</div>`;
+  }
+}
+window.renderMain=renderMain;
 
 </script>
 </body>
