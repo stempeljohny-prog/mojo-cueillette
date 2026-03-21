@@ -451,6 +451,7 @@ function buildHarvest(){
         <button class="qty-btn" onclick="window._cq('${c.id}','${f.id}',1)">+</button>
       </div>
       <div class="flower-subtotal${qty===0?' zero':''}" id="sub_${f.id}">${qty>0?(qty*f.price).toFixed(2)+'€':'—'}</div>
+      <button onclick="window._removeFromF('${c.id}','${f.id}')" style="background:none;border:none;color:#ccc;font-size:.9rem;cursor:pointer;padding:2px 0 2px 4px;flex-shrink:0" title="Retirer">✕</button>
     </div>`;
   }).join('');
 
@@ -504,6 +505,13 @@ window._fcs=function(q){
 window._fcsc=function(){const i=document.getElementById('selSearch');if(i){i.value='';i.focus();}window._fcs('');};
 window._togSel=function(fid,flid){toggleSelection(fid,flid);};
 window._noneF=function(fid){const fs=getFloristSession(state.activeSession,fid);fs.selectedIds=[];scheduleSave();renderMain();};
+window._removeFromF=function(fid,flid){
+  const fs=getFloristSession(state.activeSession,fid);
+  fs.selectedIds=(fs.selectedIds||[]).filter(x=>x!==flid);
+  fs.flowerOrder=(fs.flowerOrder||[]).filter(x=>x!==flid);
+  delete fs.quantities[flid];
+  scheduleSave();renderMain();
+};
 window._hsub=function(t){state.harvestSubTab=t;renderMain();};
 
 window._selF=function(id){state.activeFlorist=id;renderMain();};
