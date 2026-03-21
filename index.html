@@ -248,6 +248,7 @@ checkAuth();
 <main id="mainContent"><div class="spinner"></div></main>
 <div id="toast"></div>
 <input type="file" id="importInput" accept=".json" style="display:none" onchange="window._importJSON(this)">
+<input type="date" id="datePickerInput" style="position:fixed;opacity:0;top:50%;left:50%;width:1px;height:1px;pointer-events:none" onchange="window._onDatePicked(this.value)">
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -464,24 +465,20 @@ function buildDateTabs(){
 }
 window._sess=function(dk){state.activeSession=dk;renderMain();};
 window._newSess=function(){
-  // Crée un input date invisible et le déclenche
-  const inp=document.createElement('input');
-  inp.type='date';
+  const inp=document.getElementById('datePickerInput');
+  if(!inp) return;
   inp.value=todayKey();
-  inp.style.position='fixed';inp.style.opacity='0';inp.style.top='50%';inp.style.left='50%';
-  document.body.appendChild(inp);
-  inp.addEventListener('change',function(){
-    const dk=this.value;
-    if(!dk){document.body.removeChild(inp);return;}
-    if(!state.sessions[dk]) state.sessions[dk]={};
-    state.activeSession=dk;
-    document.body.removeChild(inp);
-    scheduleSave();renderMain();
-  });
-  inp.addEventListener('blur',function(){
-    setTimeout(()=>{if(document.body.contains(inp))document.body.removeChild(inp);},200);
-  });
-  inp.click();inp.focus();
+  inp.style.pointerEvents='auto';
+  inp.focus();
+  inp.click();
+};
+window._onDatePicked=function(dk){
+  const inp=document.getElementById('datePickerInput');
+  if(inp) inp.style.pointerEvents='none';
+  if(!dk) return;
+  if(!state.sessions[dk]) state.sessions[dk]={};
+  state.activeSession=dk;
+  scheduleSave();renderMain();
 };
 window._delSess=function(e,dk){e.stopPropagation();if(!confirm('Supprimer cette session ?'))return;delete state.sessions[dk];if(state.activeSession===dk)state.activeSession=todayKey();scheduleSave();renderMain();};
 
