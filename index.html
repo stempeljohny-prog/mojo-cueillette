@@ -672,32 +672,46 @@ function buildDispo(){
       const isOpen=!!(state.expandedGroups||{})['dispo_'+f.id];
       const varRows=vars.map(v=>{
         const dq=dispoDate[v.id]||0;
+        const vSub=(dq*f.price).toFixed(2);
         return `<div class="dispo-variant-row">
-          <div class="variant-name" style="flex:1;font-size:.85rem">${v.name}</div>
+          <div style="flex:1;min-width:0">
+            <div class="variant-name" style="font-size:.85rem">${v.name}</div>
+            <div style="font-size:.72rem;color:var(--text2)">${f.price.toFixed(2)} €/u${dq>0?' · <strong style="color:var(--accent)">'+vSub+' €</strong>':''}</div>
+          </div>
           <div class="dispo-qty-ctrl qty-ctrl">
             <button class="qty-btn" onclick="window._setDispo('${v.id}',${0},-1)">−</button>
             <input class="qty-input" inputmode="numeric" pattern="[0-9]*" value="${dq}" onfocus="this.select()" onchange="window._setDispoVal('${v.id}',this.value)" onblur="window._setDispoVal('${v.id}',this.value)">
             <button class="qty-btn" onclick="window._setDispo('${v.id}',${0},1)">+</button>
           </div>
+          ${dq>0?`<div style="font-weight:700;font-size:.82rem;color:var(--accent);min-width:54px;text-align:right">${vSub}€</div>`:'<div style="min-width:54px"></div>'}
         </div>`;
       }).join('');
+      const groupEuros=(totalDispo*f.price).toFixed(2);
       return `<div class="dispo-group${totalDispo>0?' has-dispo':''}">
         <div class="dispo-group-header" onclick="window._toggleGroup('dispo_${f.id}')">
           <span class="group-toggle ${isOpen?'open':''}">▶</span>
-          <span style="flex:1;font-weight:600;font-size:.9rem">${f.name}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:.9rem">${f.name}</div>
+            <div style="font-size:.72rem;color:var(--text2)">${f.price.toFixed(2)} €/u${totalDispo>0?' · <strong style="color:var(--accent)">'+groupEuros+' €</strong>':''}</div>
+          </div>
           <span class="dispo-badge${totalDispo>0?' ok':''}">${totalDispo>0?totalDispo+' tiges':'—'}</span>
         </div>
         ${isOpen?`<div class="dispo-group-variants">${varRows}</div>`:''}
       </div>`;
     }
     const dq=dispoDate[f.id]||0;
+    const dSub=(dq*f.price).toFixed(2);
     return `<div class="dispo-row${dq>0?' has-dispo':''}">
-      <div class="dispo-name">${f.name}<span class="dispo-badge${dq>0?' ok':''}">${dq>0?dq+' tiges':'—'}</span></div>
+      <div style="flex:1;min-width:0">
+        <div class="dispo-name">${f.name}</div>
+        <div style="font-size:.73rem;color:var(--text2);margin-top:1px">${f.price.toFixed(2)} €/u${dq>0?' · <strong style="color:var(--accent)">'+dSub+' €</strong>':''}</div>
+      </div>
       <div class="dispo-qty-ctrl qty-ctrl">
         <button class="qty-btn" onclick="window._setDispo('${f.id}',${0},-1)">−</button>
         <input class="qty-input" inputmode="numeric" pattern="[0-9]*" value="${dq}" onfocus="this.select()" onchange="window._setDispoVal('${f.id}',this.value)" onblur="window._setDispoVal('${f.id}',this.value)">
         <button class="qty-btn" onclick="window._setDispo('${f.id}',${0},1)">+</button>
       </div>
+      ${dq>0?`<div style="font-weight:700;font-size:.85rem;color:var(--accent);min-width:54px;text-align:right">${dSub}€</div>`:'<div style="min-width:54px"></div>'}
     </div>`;
   }).join('');
 
@@ -707,10 +721,17 @@ function buildDispo(){
     return s+(dispoDate[f.id]||0);
   },0);
 
+  const totalEuros=flowers.reduce((s,f)=>{
+    const vars=getFlowerVariants(f.id);
+    if(vars) return s+vars.reduce((vs,v)=>vs+(dispoDate[v.id]||0)*f.price,0);
+    return s+(dispoDate[f.id]||0)*f.price;
+  },0);
+
   return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
     <div>
       <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--text2)">Stock estimé ce jour</div>
       <div style="font-family:'DM Serif Display',serif;font-size:1.6rem">${total} <span style="font-size:1rem;color:var(--text2)">tiges</span></div>
+      <div style="font-size:.9rem;color:var(--accent);font-weight:600;margin-top:2px">${totalEuros.toFixed(2)} € valeur totale</div>
     </div>
     <button onclick="window._clearDispo()" style="padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:transparent;font-family:inherit;font-size:.78rem;color:var(--text2);cursor:pointer">Tout effacer</button>
   </div>
