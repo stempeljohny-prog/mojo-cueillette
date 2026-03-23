@@ -663,7 +663,19 @@ window._toggleGroup=function(fid){
 function buildDispo(){
   const today=todayKey();
   const dispoDate=(state.dispo||{})[today]||{};
-  const flowers=state.flowers||[];
+
+  // Tri : fleurs avec qté > 0 en premier, puis alphabétique
+  const flowers=[...(state.flowers||[])].sort((a,b)=>{
+    const aQty=getFlowerVariants(a.id)
+      ? (getFlowerVariants(a.id)||[]).reduce((s,v)=>s+(dispoDate[v.id]||0),0)
+      : (dispoDate[a.id]||0);
+    const bQty=getFlowerVariants(b.id)
+      ? (getFlowerVariants(b.id)||[]).reduce((s,v)=>s+(dispoDate[v.id]||0),0)
+      : (dispoDate[b.id]||0);
+    if(aQty>0 && bQty===0) return -1;
+    if(aQty===0 && bQty>0) return 1;
+    return a.name.localeCompare(b.name,'fr');
+  });
 
   const rows=flowers.map(f=>{
     const vars=getFlowerVariants(f.id);
