@@ -410,10 +410,19 @@ function setSessionPrice(floristId, flowerId, val){
   if(!fs.prices) fs.prices={};
   const flower=(state.flowers||[]).find(x=>x.id===flowerId);
   const catalogPrice=flower?flower.price:0;
-  // Si même prix que catalogue, on efface pour ne pas stocker inutilement
-  if(Math.abs(parseFloat(val)-catalogPrice)<0.001) delete fs.prices[flowerId];
-  else fs.prices[flowerId]=parseFloat(val)||catalogPrice;
+  const newPrice=parseFloat(val)||catalogPrice;
+  if(Math.abs(newPrice-catalogPrice)<0.001) delete fs.prices[flowerId];
+  else fs.prices[flowerId]=newPrice;
   scheduleSave();
+  // Mise à jour du sous-total sans re-render complet
+  const qty=(fs.quantities[flowerId]||0);
+  const sub=document.getElementById('sub_'+flowerId);
+  if(sub) {
+    sub.textContent=qty>0?(qty*newPrice).toFixed(2)+'€':'—';
+    sub.className='flower-subtotal'+(qty===0?' zero':'');
+  }
+  // Mise à jour de la barre budget
+  updateBudgetBar(floristId, floristTotal(floristId));
 }
 function floristTotal(floristId){
   const fs=getFloristSession(state.activeSession, floristId);
@@ -573,7 +582,7 @@ function buildHarvest(){
         <div style="display:flex;align-items:center;gap:4px">
           <input type="number" step="0.05" min="0" inputmode="decimal"
             value="${sessPrice.toFixed(2)}"
-            onchange="setSessionPrice('${c.id}','${f.id}',this.value);renderMain()"
+            onchange="setSessionPrice('${c.id}','${f.id}',this.value)"
             style="width:52px;border:none;border-bottom:1.5px solid ${isModified?'var(--warning)':'var(--border)'};background:transparent;font-family:inherit;font-size:.75rem;font-weight:600;color:${isModified?'var(--warning)':'var(--text2)'};padding:0 2px;-moz-appearance:textfield;appearance:textfield">
           <span style="font-size:.72rem;color:${isModified?'var(--warning)':'var(--text2)'}"">€/u${isModified?' ✎':''}</span>
         </div>
@@ -598,7 +607,7 @@ function buildHarvest(){
         <div style="display:flex;align-items:center;gap:4px">
           <input type="number" step="0.05" min="0" inputmode="decimal"
             value="${sessPrice.toFixed(2)}"
-            onchange="setSessionPrice('${c.id}','${f.id}',this.value);renderMain()"
+            onchange="setSessionPrice('${c.id}','${f.id}',this.value)"
             style="width:52px;border:none;border-bottom:1.5px solid ${isModified?'var(--warning)':'var(--border)'};background:transparent;font-family:inherit;font-size:.75rem;font-weight:600;color:${isModified?'var(--warning)':'var(--text2)'};padding:0 2px;-moz-appearance:textfield;appearance:textfield">
           <span style="font-size:.72rem;color:${isModified?'var(--warning)':'var(--text2)'}"">€/u${isModified?' ✎':''}</span>
         </div>
@@ -865,7 +874,7 @@ function buildSummary(){
     const grand=fd.reduce((s,x)=>s+x.total,0);
     html+=`<div style="margin-bottom:20px">
       <div style="font-family:'DM Serif Display',serif;font-size:1rem;margin-bottom:8px;color:var(--text2)">${formatDateKey(dk)} — <strong style="color:var(--text)">${grand.toFixed(2)} €</strong></div>
-      ${fd.map(({c,items,total,qty})=>{const b=c.budget||0,pct=b>0?Math.min((total/b)*100,100):0,bc=total>b?'over':total>b*.85?'warn':'';return`<div class="summary-florist"><div class="sf-name">${c.name}<span class="sf-total">${total.toFixed(2)} €${b>0?' / '+b.toFixed(0)+' €':''}</span></div>${items.map(f=>{const q=qty[f.id]||0;const p=fsPrices[f.id]!=null?fsPrices[f.id]:f.price;return`<div class="sf-row"><span>${f.name} × ${q}${fsPrices[f.id]!=null?' <span style="font-size:.7rem;color:var(--warning)">✎'+p.toFixed(2)+'€</span>':''}</span><span>${(q*p).toFixed(2)} €</span></div>`;}).join('')}${b>0?`<div class="sf-budget-bar"><div class="sf-budget-fill ${bc}" style="width:${pct}%"></div></div>`:''}</div>`;}).join('')}
+      ${fd.map(({c,items,total,qty,fsPrices})=>{const b=c.budget||0,pct=b>0?Math.min((total/b)*100,100):0,bc=total>b?'over':total>b*.85?'warn':'';return`<div class="summary-florist"><div class="sf-name">${c.name}<span class="sf-total">${total.toFixed(2)} €${b>0?' / '+b.toFixed(0)+' €':''}</span></div>${items.map(f=>{const q=qty[f.id]||0;const p=fsPrices[f.id]!=null?fsPrices[f.id]:f.price;return`<div class="sf-row"><span>${f.name} × ${q}${fsPrices[f.id]!=null?' <span style="font-size:.7rem;color:var(--warning)">✎'+p.toFixed(2)+'€</span>':''}</span><span>${(q*p).toFixed(2)} €</span></div>`;}).join('')}${b>0?`<div class="sf-budget-bar"><div class="sf-budget-fill ${bc}" style="width:${pct}%"></div></div>`:''}</div>`;}).join('')}
     </div>`;
   });
   if(!hasAny)return'<div class="empty">Aucune quantité saisie</div>';
