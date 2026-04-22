@@ -617,7 +617,7 @@ function buildHarvest(){
         <input class="qty-input" id="qty_${f.id}" inputmode="numeric" pattern="[0-9]*" value="${qty}" onfocus="this.select()" onchange="window._sq('${c.id}','${f.id}',this.value)" onblur="window._sq('${c.id}','${f.id}',this.value)">
         <button class="qty-btn" onclick="window._cq('${c.id}','${f.id}',1)">+</button>
       </div>
-      <div class="flower-subtotal${qty===0?' zero':''}" id="sub_${f.id}">${qty>0?(qty*f.price).toFixed(2)+'€':'—'}</div>
+      <div class="flower-subtotal${qty===0?' zero':''}" id="sub_${f.id}">${qty>0?(qty*sessPrice).toFixed(2)+'€':'—'}</div>
       <button onclick="window._removeFromF('${c.id}','${f.id}')" style="background:none;border:none;color:#ccc;font-size:.9rem;cursor:pointer;padding:2px 0 2px 4px;flex-shrink:0" title="Retirer">✕</button>
     </div>`;
   }).join('');
