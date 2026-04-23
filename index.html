@@ -414,15 +414,11 @@ function setSessionPrice(floristId, flowerId, val){
   if(Math.abs(newPrice-catalogPrice)<0.001) delete fs.prices[flowerId];
   else fs.prices[flowerId]=newPrice;
   scheduleSave();
-  // Mise à jour du sous-total sans re-render complet
-  const qty=(fs.quantities[flowerId]||0);
-  const sub=document.getElementById('sub_'+flowerId);
-  if(sub) {
-    sub.textContent=qty>0?(qty*newPrice).toFixed(2)+'€':'—';
-    sub.className='flower-subtotal'+(qty===0?' zero':'');
-  }
-  // Mise à jour de la barre budget
-  updateBudgetBar(floristId, floristTotal(floristId));
+  // Force un re-render complet pour garantir la mise à jour de tous les totaux
+  renderMain();
+  // Remet le focus sur le champ prix après re-render
+  const priceInput=document.querySelector('input[data-price-id="'+flowerId+'"]');
+  if(priceInput) priceInput.focus();
 }
 function floristTotal(floristId){
   const fs=getFloristSession(state.activeSession, floristId);
@@ -582,7 +578,9 @@ function buildHarvest(){
         <div style="display:flex;align-items:center;gap:4px">
           <input type="number" step="0.05" min="0" inputmode="decimal"
             value="${sessPrice.toFixed(2)}"
+            data-price-id="${f.id}"
             onchange="setSessionPrice('${c.id}','${f.id}',this.value)"
+            onblur="setSessionPrice('${c.id}','${f.id}',this.value)"
             style="width:52px;border:none;border-bottom:1.5px solid ${isModified?'var(--warning)':'var(--border)'};background:transparent;font-family:inherit;font-size:.75rem;font-weight:600;color:${isModified?'var(--warning)':'var(--text2)'};padding:0 2px;-moz-appearance:textfield;appearance:textfield">
           <span style="font-size:.72rem;color:${isModified?'var(--warning)':'var(--text2)'}"">€/u${isModified?' ✎':''}</span>
         </div>
@@ -607,7 +605,9 @@ function buildHarvest(){
         <div style="display:flex;align-items:center;gap:4px">
           <input type="number" step="0.05" min="0" inputmode="decimal"
             value="${sessPrice.toFixed(2)}"
+            data-price-id="${f.id}"
             onchange="setSessionPrice('${c.id}','${f.id}',this.value)"
+            onblur="setSessionPrice('${c.id}','${f.id}',this.value)"
             style="width:52px;border:none;border-bottom:1.5px solid ${isModified?'var(--warning)':'var(--border)'};background:transparent;font-family:inherit;font-size:.75rem;font-weight:600;color:${isModified?'var(--warning)':'var(--text2)'};padding:0 2px;-moz-appearance:textfield;appearance:textfield">
           <span style="font-size:.72rem;color:${isModified?'var(--warning)':'var(--text2)'}"">€/u${isModified?' ✎':''}</span>
         </div>
