@@ -577,12 +577,11 @@ function buildHarvest(){
         <div class="flower-name">${f.name} ${dispoBadge}</div>
         <div style="display:flex;align-items:center;gap:4px">
           <input type="number" step="0.05" min="0" inputmode="decimal"
+            id="price_${f.id}"
             value="${sessPrice.toFixed(2)}"
-            data-price-id="${f.id}"
-            onchange="setSessionPrice('${c.id}','${f.id}',this.value)"
             onblur="setSessionPrice('${c.id}','${f.id}',this.value)"
-            style="width:52px;border:none;border-bottom:1.5px solid ${isModified?'var(--warning)':'var(--border)'};background:transparent;font-family:inherit;font-size:.75rem;font-weight:600;color:${isModified?'var(--warning)':'var(--text2)'};padding:0 2px;-moz-appearance:textfield;appearance:textfield">
-          <span style="font-size:.72rem;color:${isModified?'var(--warning)':'var(--text2)'}"">€/u${isModified?' ✎':''}</span>
+            style="width:48px;border:none;border-bottom:1.5px solid ${isModified?'var(--warning)':'var(--border)'};background:transparent;font-family:inherit;font-size:.75rem;font-weight:600;color:${isModified?'var(--warning)':'var(--text2)'};padding:0 2px;-moz-appearance:textfield;appearance:textfield">
+          <button onclick="setSessionPrice('${c.id}','${f.id}',document.getElementById('price_${f.id}').value)" style="background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:.65rem;padding:2px 5px;cursor:pointer;line-height:1.4">✓</button>
         </div>
       </div>
           <div class="flower-subtotal${totalQty===0?' zero':''}">${totalQty>0?(totalQty*f.price).toFixed(2)+'€':'—'}</div>
@@ -604,12 +603,11 @@ function buildHarvest(){
         <div class="flower-name">${f.name} ${dispoBadge}</div>
         <div style="display:flex;align-items:center;gap:4px">
           <input type="number" step="0.05" min="0" inputmode="decimal"
+            id="price_${f.id}"
             value="${sessPrice.toFixed(2)}"
-            data-price-id="${f.id}"
-            onchange="setSessionPrice('${c.id}','${f.id}',this.value)"
             onblur="setSessionPrice('${c.id}','${f.id}',this.value)"
-            style="width:52px;border:none;border-bottom:1.5px solid ${isModified?'var(--warning)':'var(--border)'};background:transparent;font-family:inherit;font-size:.75rem;font-weight:600;color:${isModified?'var(--warning)':'var(--text2)'};padding:0 2px;-moz-appearance:textfield;appearance:textfield">
-          <span style="font-size:.72rem;color:${isModified?'var(--warning)':'var(--text2)'}"">€/u${isModified?' ✎':''}</span>
+            style="width:48px;border:none;border-bottom:1.5px solid ${isModified?'var(--warning)':'var(--border)'};background:transparent;font-family:inherit;font-size:.75rem;font-weight:600;color:${isModified?'var(--warning)':'var(--text2)'};padding:0 2px;-moz-appearance:textfield;appearance:textfield">
+          <button onclick="setSessionPrice('${c.id}','${f.id}',document.getElementById('price_${f.id}').value)" style="background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:.65rem;padding:2px 5px;cursor:pointer;line-height:1.4">✓</button>
         </div>
       </div>
       <div class="qty-ctrl">
