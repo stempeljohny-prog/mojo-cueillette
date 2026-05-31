@@ -336,6 +336,8 @@ function sanitizeSessions(sessions){
         selectedIds: Array.isArray(fs.selectedIds)?fs.selectedIds:[],
         flowerOrder: Array.isArray(fs.flowerOrder)?fs.flowerOrder:[],
         quantities: fs.quantities||{},
+        prices: fs.prices||{},
+        dupes: fs.dupes||{},
       };
     });
   });
@@ -411,13 +413,21 @@ function getSessionPrice(floristId, flowerId){
 }
 function setSessionPrice(floristId, flowerId, val){
   const fs=getFloristSession(state.activeSession, floristId);
-  if(!fs.prices) fs.prices={};
-  const flower=(state.flowers||[]).find(x=>x.id===flowerId);
-  const catalogPrice=flower?flower.price:0;
-  const newPrice=parseFloat(val)||catalogPrice;
-  if(Math.abs(newPrice-catalogPrice)<0.001) delete fs.prices[flowerId];
-  else fs.prices[flowerId]=newPrice;
-  // Sauvegarde immédiate (pas de délai) pour éviter le reset au re-render
+  const newPrice=parseFloat(val);
+  if(isNaN(newPrice)||newPrice<=0) return;
+
+  // Si c'est une dupe, on met à jour son prix dans fs.dupes directement
+  if(fs.dupes&&fs.dupes[flowerId]){
+    fs.dupes[flowerId].price=newPrice;
+  } else {
+    // Fleur normale : comparer au prix catalogue
+    if(!fs.prices) fs.prices={};
+    const flower=(state.flowers||[]).find(x=>x.id===flowerId);
+    const catalogPrice=flower?flower.price:0;
+    if(Math.abs(newPrice-catalogPrice)<0.001) delete fs.prices[flowerId];
+    else fs.prices[flowerId]=newPrice;
+  }
+  // Sauvegarde immédiate avant re-render
   pushToFirebase();
   renderMain();
 }
