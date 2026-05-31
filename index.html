@@ -420,6 +420,7 @@ function setSessionPrice(floristId, flowerId, val){
   const priceInput=document.querySelector('input[data-price-id="'+flowerId+'"]');
   if(priceInput) priceInput.focus();
 }
+window.setSessionPrice=setSessionPrice;
 function floristTotal(floristId){
   const fs=getFloristSession(state.activeSession, floristId);
   return (state.flowers||[]).reduce((s,f)=>{
