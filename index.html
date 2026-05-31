@@ -84,23 +84,23 @@ main{padding:16px;max-width:600px;margin:0 auto}
 
 /* FLOWER ROWS */
 .flower-list{display:flex;flex-direction:column;gap:7px;margin-bottom:16px}
-.flower-row{background:var(--surface);border-radius:11px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);border:1px solid var(--border);transition:border-color .2s}
+.flower-row{background:var(--surface);border-radius:11px;padding:8px 10px;display:flex;align-items:center;gap:7px;box-shadow:var(--shadow);border:1px solid var(--border);transition:border-color .2s}
 .flower-row.has-qty{border-color:var(--accent2);background:#f7fbf3}
 .flower-row.dragging{opacity:.35;background:var(--surface2)}
 .flower-row.drag-over-h{border-color:var(--accent);border-style:dashed}
-.harvest-handle{cursor:grab;color:#ccc;font-size:1.1rem;padding:0 2px;touch-action:none;user-select:none;flex-shrink:0}
+.harvest-handle{cursor:grab;color:#ccc;font-size:.9rem;padding:0 1px;touch-action:none;user-select:none;flex-shrink:0}
 .flower-info{flex:1;min-width:0}
-.flower-name{font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flower-name{font-weight:600;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .flower-price{font-size:.75rem;color:var(--text2)}
 
 /* QTY */
-.qty-ctrl{display:flex;align-items:center;background:var(--surface2);border-radius:9px;overflow:hidden;border:1px solid var(--border)}
-.qty-btn{width:36px;height:38px;border:none;background:transparent;font-size:1.2rem;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center;user-select:none}
+.qty-ctrl{display:flex;align-items:center;background:var(--surface2);border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.qty-btn{width:28px;height:32px;border:none;background:transparent;font-size:1rem;cursor:pointer;color:var(--text);display:flex;align-items:center;justify-content:center;user-select:none}
 .qty-btn:active{background:var(--border)}
-.qty-input{width:46px;height:38px;text-align:center;border:none;background:transparent;font-family:inherit;font-size:.95rem;font-weight:700;color:var(--text);padding:0;-moz-appearance:textfield;appearance:textfield}
+.qty-input{width:36px;height:32px;text-align:center;border:none;background:transparent;font-family:inherit;font-size:.88rem;font-weight:700;color:var(--text);padding:0;-moz-appearance:textfield;appearance:textfield}
 .qty-input::-webkit-outer-spin-button,.qty-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .qty-input:focus{outline:none;background:rgba(92,138,60,.08)}
-.flower-subtotal{font-weight:700;font-size:.85rem;color:var(--accent);min-width:46px;text-align:right}
+.flower-subtotal{font-weight:700;font-size:.82rem;color:var(--accent);min-width:40px;text-align:right}
 .flower-subtotal.zero{color:var(--border)}
 
 /* FLORIST SELECTOR */
@@ -148,6 +148,23 @@ main{padding:16px;max-width:600px;margin:0 auto}
 .btn-export{width:100%;padding:12px;border:none;border-radius:11px;background:var(--text);font-family:inherit;font-size:.86rem;color:#fff;font-weight:600;cursor:pointer;margin-bottom:7px}
 .btn-import{width:100%;padding:12px;border:1.5px solid var(--accent);border-radius:11px;background:transparent;font-family:inherit;font-size:.86rem;color:var(--accent);font-weight:600;cursor:pointer;margin-bottom:7px}
 .hint{font-size:.73rem;color:var(--text2);margin-bottom:10px;padding:8px 12px;background:var(--surface2);border-radius:8px;line-height:1.5}
+
+/* MIX */
+.mix-card{background:var(--surface);border-radius:var(--radius);padding:14px;margin-bottom:10px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.mix-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.mix-row:last-child{border-bottom:none}
+.mix-name{flex:1;font-size:.88rem;font-weight:500;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mix-price{font-size:.75rem;color:var(--text2);white-space:nowrap}
+.priority-btns{display:flex;gap:3px;flex-shrink:0}
+.prio-btn{width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:transparent;font-size:.7rem;cursor:pointer;font-weight:700;transition:all .15s;color:var(--text2)}
+.prio-btn.active-1{background:#e3f2fd;border-color:#90caf9;color:#1565c0}
+.prio-btn.active-2{background:#fff3e0;border-color:#ffb74d;color:#e65100}
+.prio-btn.active-3{background:#fce4ec;border-color:#f48fb1;color:#c62828}
+.mix-result-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:.86rem}
+.mix-result-row:last-child{border-bottom:none}
+.mix-qty-badge{background:var(--accent);color:#fff;border-radius:12px;padding:2px 10px;font-weight:700;font-size:.82rem}
+.mix-total-bar{height:8px;background:var(--surface2);border-radius:8px;overflow:hidden;margin:10px 0 6px}
+.mix-total-fill{height:100%;border-radius:8px;background:var(--accent);transition:width .4s}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:#fff;padding:10px 20px;border-radius:20px;font-size:.84rem;transition:transform .3s;z-index:9998;pointer-events:none}
 #toast.show{transform:translateX(-50%) translateY(0)}
 .empty{text-align:center;color:var(--text2);font-size:.88rem;padding:30px 0}
@@ -291,6 +308,9 @@ function defaultState(){
     activeTab: 'harvest',
     harvestSubTab: 'cueillette', // 'cueillette' | 'selection'
     expandedGroups: {}, // { flowerId: bool } pour dérouler variantes
+    mixPriorities: {}, // { flowerId: 1|2|3 }
+    mixBudget: 100,
+    mixFloristId: null,
   };
 }
 
@@ -497,7 +517,7 @@ document.getElementById('headerDate').textContent=new Date().toLocaleDateString(
 // ── TABS ──────────────────────────────────────────────────────────────
 function renderTabs(){
   document.getElementById('tabBar').innerHTML=[
-    {id:'harvest',label:'🌿 Cueillette'},{id:'dispo',label:'📦 Dispo'},{id:'summary',label:'📋 Récap'},
+    {id:'harvest',label:'🌿 Cueillette'},{id:'mix',label:'🎯 Mix'},{id:'dispo',label:'📦 Dispo'},{id:'summary',label:'📋 Récap'},
     {id:'catalog',label:'✏️ Fleurs'},{id:'florists',label:'🏪 Fleuristes'},
     {id:'backup',label:'💾 Sauvegarde'},
   ].map(t=>`<button class="tab ${state.activeTab===t.id?'active':''}" onclick="window._tab('${t.id}')">${t.label}</button>`).join('');
@@ -632,7 +652,7 @@ function buildHarvest(){
             value="${sessPrice.toFixed(2)}"
             onblur="setSessionPrice('${c.id}','${f.id}',this.value)"
             style="width:48px;border:none;border-bottom:1.5px solid ${isModified?'var(--warning)':'var(--border)'};background:transparent;font-family:inherit;font-size:.75rem;font-weight:600;color:${isModified?'var(--warning)':'var(--text2)'};padding:0 2px;-moz-appearance:textfield;appearance:textfield">
-          <button onclick="setSessionPrice('${c.id}','${f.id}',this.previousElementSibling.value)" style="background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:.65rem;padding:2px 5px;cursor:pointer;line-height:1.4">✓</button>
+          <button onclick="setSessionPrice('${c.id}','${f.id}',this.previousElementSibling.value)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;font-size:.6rem;padding:1px 4px;cursor:pointer;line-height:1.4">✓</button>
         </div>
       </div>
           <div class="flower-subtotal${totalQty===0?' zero':''}">${totalQty>0?(totalQty*f.price).toFixed(2)+'€':'—'}</div>
@@ -658,7 +678,7 @@ function buildHarvest(){
             value="${sessPrice.toFixed(2)}"
             onblur="setSessionPrice('${c.id}','${f.id}',this.value)"
             style="width:48px;border:none;border-bottom:1.5px solid ${isModified?'var(--warning)':'var(--border)'};background:transparent;font-family:inherit;font-size:.75rem;font-weight:600;color:${isModified?'var(--warning)':'var(--text2)'};padding:0 2px;-moz-appearance:textfield;appearance:textfield">
-          <button onclick="setSessionPrice('${c.id}','${f.id}',this.previousElementSibling.value)" style="background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:.65rem;padding:2px 5px;cursor:pointer;line-height:1.4">✓</button>
+          <button onclick="setSessionPrice('${c.id}','${f.id}',this.previousElementSibling.value)" style="background:var(--accent);color:#fff;border:none;border-radius:5px;font-size:.6rem;padding:1px 4px;cursor:pointer;line-height:1.4">✓</button>
         </div>
       </div>
       <div class="qty-ctrl">
@@ -800,6 +820,208 @@ window._toggleGroup=function(fid){
   state.expandedGroups[fid]=!state.expandedGroups[fid];
   renderMain();
 };
+
+// ── MIX ───────────────────────────────────────────────────────────────
+function buildMix(){
+  const florists=state.florists||[];
+  if(!state.mixFloristId||!florists.find(f=>f.id===state.mixFloristId)){
+    state.mixFloristId=(florists[0]||{}).id;
+  }
+  const budget=state.mixBudget||100;
+
+  // Fleurs disponibles = fleurs du catalogue (toutes)
+  const flowers=(state.flowers||[]).filter(f=>!getFlowerVariants(f.id)); // sans variantes pour simplifier
+  const priorities=state.mixPriorities||{};
+
+  // Calcul du mix
+  const activePrios=flowers.map(f=>({f,prio:priorities[f.id]||0})).filter(x=>x.prio>0);
+  let mixResult=[];
+  let totalUsed=0;
+
+  // Limites par niveau de priorité
+  const maxQtyByPrio={1:15,2:30,3:50}; // B=15, M=30, H=50 tiges max
+  const weightsByPrio={1:1,2:2,3:4};   // B=1, M=2, H=4 (poids budget)
+
+  if(activePrios.length>0){
+    const totalWeight=activePrios.reduce((s,x)=>s+weightsByPrio[x.prio],0);
+    mixResult=activePrios.map(({f,prio})=>{
+      const share=(weightsByPrio[prio]/totalWeight)*budget;
+      const maxQty=maxQtyByPrio[prio];
+      const qty=Math.min(maxQty, Math.floor(share/f.price));
+      const cost=qty*f.price;
+      return {f,qty,cost,prio};
+    }).filter(x=>x.qty>0);
+    totalUsed=mixResult.reduce((s,x)=>s+x.cost,0);
+    // Distribuer le budget restant aux fleurs H qui ont de la marge
+    let remaining=budget-totalUsed;
+    const sorted=[...mixResult].sort((a,b)=>b.prio-a.prio||b.f.price-a.f.price);
+    for(const item of sorted){
+      if(remaining<item.f.price) break;
+      const maxExtra=maxQtyByPrio[item.prio]-item.qty;
+      if(maxExtra<=0) continue;
+      const extra=Math.min(maxExtra, Math.floor(remaining/item.f.price));
+      if(extra>0){
+        item.qty+=extra;
+        item.cost+=extra*item.f.price;
+        remaining-=extra*item.f.price;
+        totalUsed+=extra*item.f.price;
+      }
+    }
+  }
+
+  const pct=budget>0?Math.min((totalUsed/budget)*100,100):0;
+
+  // Florist selector
+  const floristSel=`<div class="florist-selector" style="margin-bottom:12px">
+    ${florists.map(c=>`<button class="fs-btn ${c.id===state.mixFloristId?'active':''}" onclick="window._mixF('${c.id}')">${c.name}</button>`).join('')}
+  </div>`;
+
+  // Priority rows
+  const prioRows=flowers.map(f=>{
+    const p=priorities[f.id]||0;
+    return `<div class="mix-row">
+      <div class="mix-name">${f.name}</div>
+      <div class="mix-price">${f.price.toFixed(2)}€</div>
+      <div class="priority-btns">
+        <button class="prio-btn ${p===1?'active-1':''}" onclick="window._setPrio('${f.id}',${p===1?0:1})" title="Basse">B</button>
+        <button class="prio-btn ${p===2?'active-2':''}" onclick="window._setPrio('${f.id}',${p===2?0:2})" title="Moyenne">M</button>
+        <button class="prio-btn ${p===3?'active-3':''}" onclick="window._setPrio('${f.id}',${p===3?0:3})" title="Haute">H</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Result
+  const resultRows=mixResult.length>0
+    ? mixResult.map(({f,qty,cost,prio})=>{
+        const labels={1:'Basse (1-3 bottes)',2:'Moyenne (4-6 bottes)',3:'Haute (7+ bottes)'};
+        const colors={1:'#1565c0',2:'#e65100',3:'#c62828'};
+        return `<div class="mix-result-row">
+          <div>
+            <div style="font-weight:600;font-size:.88rem">${f.name}</div>
+            <div style="font-size:.72rem;color:var(--text2)">${f.price.toFixed(2)} €/u · priorité <span style="color:${colors[prio]};font-weight:600">${labels[prio]}</span></div>
+          </div>
+          <div style="text-align:right">
+            <span class="mix-qty-badge">${qty} tiges</span>
+            <div style="font-size:.75rem;color:var(--text2);margin-top:2px">${cost.toFixed(2)} €</div>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="empty" style="padding:20px 0">Sélectionne au moins une fleur avec une priorité</div>';
+
+  const applyBtn=mixResult.length>0
+    ? `<button onclick="window._applyMix()" style="width:100%;padding:13px;border:none;border-radius:11px;background:var(--accent);color:#fff;font-family:inherit;font-size:.9rem;font-weight:700;cursor:pointer;margin-top:12px">
+        ✅ Appliquer à ${(florists.find(f=>f.id===state.mixFloristId)||{}).name||''}
+      </button>`
+    : '';
+
+  return `
+    <div class="hint">Choisis un fleuriste et le budget. Définis la disponibilité de chaque fleur : <strong>B</strong> = 1-3 bottes (max 15 tiges) · <strong>M</strong> = 4-6 bottes (max 30) · <strong>H</strong> = 7+ bottes (max 50). L'app répartit le budget en respectant ces limites.</div>
+    ${floristSel}
+    <div class="mix-card">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div style="flex:1;font-size:.75rem;text-transform:uppercase;letter-spacing:.8px;color:var(--text2)">Budget</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <input type="number" min="0" step="5" value="${budget}" inputmode="numeric"
+          onblur="window._mixBudget(this.value)"
+          style="width:80px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:1rem;font-weight:700;text-align:right;background:var(--bg);color:var(--text);-moz-appearance:textfield;appearance:textfield"> €
+        ${[100,300,400,500].map(b=>`<button onclick="window._mixBudget(${b})" style="padding:5px 10px;border-radius:16px;border:1.5px solid ${budget===b?'var(--accent)':'var(--border)'};background:${budget===b?'var(--accent)':'transparent'};color:${budget===b?'#fff':'var(--text2)'};font-family:inherit;font-size:.78rem;font-weight:600;cursor:pointer">${b}€</button>`).join('')}
+      </div>
+      </div>
+      ${activePrios.length>0?`
+        <div class="mix-total-bar"><div class="mix-total-fill" style="width:${pct}%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text2);margin-bottom:10px">
+          <span>${totalUsed.toFixed(2)} € utilisés</span>
+          <span>${(budget-totalUsed).toFixed(2)} € restants</span>
+        </div>`:''}
+      <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);margin-bottom:8px">Résultat du mix</div>
+      ${resultRows}
+      ${applyBtn}
+    </div>
+    <div class="mix-card">
+      <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);margin-bottom:8px">Priorités par fleur</div>
+      <div class="search-bar" style="margin-bottom:10px"><span>🔍</span>
+        <input id="mixSearch" placeholder="Rechercher…" oninput="window._fmix(this.value)" autocomplete="off" spellcheck="false">
+        <button onclick="window._fmixc()" style="display:none;background:none;border:none;cursor:pointer;color:var(--text2)" id="clearMixSearch">✕</button>
+      </div>
+      <div id="mixPrioList">${prioRows}</div>
+      <button onclick="window._resetPrios()" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:10px;background:transparent;font-family:inherit;font-size:.82rem;color:var(--text2);cursor:pointer;margin-top:10px">Réinitialiser les priorités</button>
+    </div>`;
+}
+
+window._mixF=function(id){state.mixFloristId=id;renderMain();};
+window._mixBudget=function(v){
+  const val=parseFloat(v)||100;
+  state.mixBudget=val;
+  // Sync l'input si appelé depuis un bouton
+  const inp=document.querySelector('input[type=number][onblur*="_mixBudget"]');
+  if(inp) inp.value=val;
+  renderMain();
+};
+window._setPrio=function(fid,p){
+  if(!state.mixPriorities)state.mixPriorities={};
+  if(p===0)delete state.mixPriorities[fid];
+  else state.mixPriorities[fid]=p;
+  renderMain();
+};
+window._resetPrios=function(){state.mixPriorities={};renderMain();};
+window._applyMix=function(){
+  const florists=state.florists||[];
+  const fid=state.mixFloristId;
+  if(!fid) return;
+  const budget=state.mixBudget||100;
+  const flowers=(state.flowers||[]).filter(f=>!getFlowerVariants(f.id));
+  const priorities=state.mixPriorities||{};
+  const activePrios=flowers.map(f=>({f,prio:priorities[f.id]||0})).filter(x=>x.prio>0);
+  if(!activePrios.length) return;
+  const maxQtyByPrio={1:15,2:30,3:50};
+  const weightsByPrio={1:1,2:2,3:4};
+  const totalWeight=activePrios.reduce((s,x)=>s+weightsByPrio[x.prio],0);
+  const mixResult=activePrios.map(({f,prio})=>{
+    const share=(weightsByPrio[prio]/totalWeight)*budget;
+    const qty=Math.min(maxQtyByPrio[prio],Math.floor(share/f.price));
+    return{f,qty,prio};
+  }).filter(x=>x.qty>0);
+  let totalUsed=mixResult.reduce((s,x)=>s+x.qty*x.f.price,0);
+  let remaining=budget-totalUsed;
+  const sorted=[...mixResult].sort((a,b)=>b.prio-a.prio||b.f.price-a.f.price);
+  for(const item of sorted){
+    if(remaining<item.f.price) break;
+    const maxExtra=maxQtyByPrio[item.prio]-item.qty;
+    if(maxExtra<=0) continue;
+    const extra=Math.min(maxExtra,Math.floor(remaining/item.f.price));
+    if(extra>0){item.qty+=extra;remaining-=extra*item.f.price;}
+  }
+  // Appliquer dans la session
+  const c=florists.find(x=>x.id===fid);
+  if(!c) return;
+  const floristName=c.name;
+  if(!confirm('Appliquer ce mix à '+floristName+' ? Les quantités actuelles seront remplacées.')) return;
+  const fs=getFloristSession(state.activeSession,fid);
+  // Reset quantities pour les fleurs du mix
+  mixResult.forEach(({f,qty})=>{
+    fs.quantities[f.id]=qty;
+    // Ajouter à la sélection si pas déjà dedans
+    if(!fs.selectedIds.includes(f.id)){
+      fs.selectedIds.push(f.id);
+      fs.flowerOrder.push(f.id);
+    }
+  });
+  pushToFirebase();
+  state.activeTab='harvest';
+  state.activeFlorist=fid;
+  renderMain();
+  showToast('Mix appliqué à '+floristName+' !');
+};
+window._fmix=function(q){
+  const v=q.toLowerCase();
+  document.querySelectorAll('#mixPrioList .mix-row').forEach(r=>{
+    const n=r.querySelector('.mix-name');
+    if(!n) return;
+    r.style.display=(!v||n.textContent.toLowerCase().includes(v))?'':'none';
+  });
+  const b=document.getElementById('clearMixSearch');if(b)b.style.display=v?'':'none';
+};
+window._fmixc=function(){const i=document.getElementById('mixSearch');if(i){i.value='';i.focus();}window._fmix('');};
 
 // ── DISPO ─────────────────────────────────────────────────────────────
 function buildDispo(){
@@ -1072,7 +1294,7 @@ window.showToast=showToast;
 function renderMain(){
   renderTabs();
   const m=document.getElementById('mainContent');
-  const builders={harvest:buildHarvest,dispo:buildDispo,summary:buildSummary,catalog:buildCatalog,florists:buildFlorists,backup:buildBackup};
+  const builders={harvest:buildHarvest,mix:buildMix,dispo:buildDispo,summary:buildSummary,catalog:buildCatalog,florists:buildFlorists,backup:buildBackup};
   try{m.innerHTML=(builders[state.activeTab]||buildHarvest)();}
   catch(e){console.error('Render error',e);m.innerHTML=`<div class="empty">Erreur d'affichage</div>`;}
 }
