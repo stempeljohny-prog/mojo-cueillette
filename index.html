@@ -353,6 +353,7 @@ function getFloristSession(dateKey, floristId){
   if(!fs.flowerOrder) fs.flowerOrder=[];
   if(!fs.quantities) fs.quantities={};
   if(!fs.prices) fs.prices={};
+  if(!fs.dupes) fs.dupes={};
   return fs;
 }
 function currentFS(){ return getFloristSession(state.activeSession, state.activeFlorist); }
@@ -400,10 +401,13 @@ function flowerTotalDispoQty(flowerId, dateKey){
 }
 
 function getSessionPrice(floristId, flowerId){
-  // Prix de la session si modifié, sinon prix du catalogue
   const fs=getFloristSession(state.activeSession, floristId);
+  if(fs.prices&&fs.prices[flowerId]!=null) return fs.prices[flowerId];
+  // Si c'est une dupe, utiliser son prix
+  const dupe=(fs.dupes||{})[flowerId];
+  if(dupe) return dupe.price;
   const flower=(state.flowers||[]).find(x=>x.id===flowerId);
-  return (fs.prices&&fs.prices[flowerId]!=null) ? fs.prices[flowerId] : (flower?flower.price:0);
+  return flower?flower.price:0;
 }
 function setSessionPrice(floristId, flowerId, val){
   const fs=getFloristSession(state.activeSession, floristId);
@@ -413,22 +417,26 @@ function setSessionPrice(floristId, flowerId, val){
   const newPrice=parseFloat(val)||catalogPrice;
   if(Math.abs(newPrice-catalogPrice)<0.001) delete fs.prices[flowerId];
   else fs.prices[flowerId]=newPrice;
-  scheduleSave();
-  // Force un re-render complet pour garantir la mise à jour de tous les totaux
+  // Sauvegarde immédiate (pas de délai) pour éviter le reset au re-render
+  pushToFirebase();
   renderMain();
-  // Remet le focus sur le champ prix après re-render
-  const priceInput=document.querySelector('input[data-price-id="'+flowerId+'"]');
-  if(priceInput) priceInput.focus();
 }
 window.setSessionPrice=setSessionPrice;
 function floristTotal(floristId){
   const fs=getFloristSession(state.activeSession, floristId);
-  return (state.flowers||[]).reduce((s,f)=>{
+  let total=(state.flowers||[]).reduce((s,f)=>{
     const vars=getFlowerVariants(f.id);
     const price=getSessionPrice(floristId,f.id);
     if(vars) return s+vars.reduce((vs,v)=>vs+(fs.quantities[v.id]||0)*price,0);
     return s+(fs.quantities[f.id]||0)*price;
   },0);
+  // Ajouter les dupes
+  Object.keys(fs.dupes||{}).forEach(k=>{
+    const dupe=fs.dupes[k];
+    const price=(fs.prices&&fs.prices[k]!=null)?fs.prices[k]:dupe.price;
+    total+=(fs.quantities[k]||0)*price;
+  });
+  return total;
 }
 
 // Fleurs sélectionnées pour ce fleuriste, dans leur ordre
@@ -439,7 +447,12 @@ function floristFlowerOrder(floristId){
   (fs.flowerOrder||[]).forEach(id=>{if(selected.has(id))ordered.push(id);});
   fs.selectedIds.forEach(id=>{if(!ordered.includes(id))ordered.push(id);});
   fs.flowerOrder=[...ordered];
-  return ordered.map(id=>(state.flowers||[]).find(f=>f.id===id)).filter(Boolean);
+  // Retourner objets fleur ou dupe
+  return ordered.map(id=>{
+    const dupe=(fs.dupes||{})[id];
+    if(dupe) return {id,name:dupe.name,price:dupe.price,isDupe:true,parentId:dupe.parentId};
+    return (state.flowers||[]).find(f=>f.id===id);
+  }).filter(Boolean);
 }
 
 function isSelected(floristId, flowerId){
@@ -552,6 +565,33 @@ function buildHarvest(){
 
   const fs=getFloristSession(state.activeSession,c.id);
   const rows=ordered.map(f=>{
+    // Ligne dupliquée
+    if(f.isDupe){
+      const qty=getQty(c.id,f.id);
+      const sessPrice=getSessionPrice(c.id,f.id);
+      const isModified=(fs.prices&&fs.prices[f.id]!=null);
+      return `<div class="flower-row${qty>0?' has-qty':''}" id="row_${f.id}" style="border-left:3px solid var(--accent2)">
+        <span style="color:#ccc;font-size:.9rem;padding:0 4px;flex-shrink:0">⠿</span>
+        <div class="flower-info">
+          <div class="flower-name" style="font-size:.85rem">${f.name}</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <input type="number" step="0.05" min="0" inputmode="decimal"
+              id="price_${f.id}"
+              value="${sessPrice.toFixed(2)}"
+              onblur="setSessionPrice('${c.id}','${f.id}',this.value)"
+              style="width:48px;border:none;border-bottom:1.5px solid var(--warning);background:transparent;font-family:inherit;font-size:.75rem;font-weight:600;color:var(--warning);padding:0 2px;-moz-appearance:textfield;appearance:textfield">
+            <button onclick="setSessionPrice('${c.id}','${f.id}',this.previousElementSibling.value)" style="background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:.65rem;padding:2px 5px;cursor:pointer">✓</button>
+          </div>
+        </div>
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="window._cq('${c.id}','${f.id}',-1)">−</button>
+          <input class="qty-input" id="qty_${f.id}" inputmode="numeric" pattern="[0-9]*" value="${qty}" onfocus="this.select()" onchange="window._sq('${c.id}','${f.id}',this.value)" onblur="window._sq('${c.id}','${f.id}',this.value)">
+          <button class="qty-btn" onclick="window._cq('${c.id}','${f.id}',1)">+</button>
+        </div>
+        <div class="flower-subtotal${qty===0?' zero':''}" id="sub_${f.id}">${qty>0?(qty*sessPrice).toFixed(2)+'€':'—'}</div>
+        <button onclick="window._removeFromF('${c.id}','${f.id}')" style="background:none;border:none;color:#ccc;font-size:.9rem;cursor:pointer;padding:2px 0 2px 2px">✕</button>
+      </div>`;
+    }
     const vars=getFlowerVariants(f.id);
     if(vars){
       const totalQty=flowerTotalQty(c.id,f.id);
@@ -617,7 +657,8 @@ function buildHarvest(){
         <button class="qty-btn" onclick="window._cq('${c.id}','${f.id}',1)">+</button>
       </div>
       <div class="flower-subtotal${qty===0?' zero':''}" id="sub_${f.id}">${qty>0?(qty*sessPrice).toFixed(2)+'€':'—'}</div>
-      <button onclick="window._removeFromF('${c.id}','${f.id}')" style="background:none;border:none;color:#ccc;font-size:.9rem;cursor:pointer;padding:2px 0 2px 4px;flex-shrink:0" title="Retirer">✕</button>
+      <button onclick="window._dupRow('${c.id}','${f.id}')" style="background:none;border:none;color:var(--accent2);font-size:.85rem;cursor:pointer;padding:2px 0 2px 2px;flex-shrink:0" title="Dupliquer avec prix différent">⊕</button>
+      <button onclick="window._removeFromF('${c.id}','${f.id}')" style="background:none;border:none;color:#ccc;font-size:.9rem;cursor:pointer;padding:2px 0 2px 2px;flex-shrink:0" title="Retirer">✕</button>
     </div>`;
   }).join('');
 
@@ -682,6 +723,35 @@ window._removeFromF=function(fid,flid){
   fs.selectedIds=(fs.selectedIds||[]).filter(x=>x!==flid);
   fs.flowerOrder=(fs.flowerOrder||[]).filter(x=>x!==flid);
   delete fs.quantities[flid];
+  delete (fs.prices||{})[flid];
+  // Si c'est une fleur parente, supprimer aussi ses dupes
+  if(!(fs.dupes||{})[flid]){
+    const dupeIds=Object.keys(fs.dupes||{}).filter(k=>(fs.dupes[k].parentId===flid));
+    dupeIds.forEach(k=>{
+      delete fs.dupes[k];delete fs.quantities[k];
+      fs.selectedIds=fs.selectedIds.filter(x=>x!==k);
+      fs.flowerOrder=fs.flowerOrder.filter(x=>x!==k);
+    });
+  } else {
+    // C'est une dupe, juste la supprimer
+    delete fs.dupes[flid];
+  }
+  scheduleSave();renderMain();
+};
+window._dupRow=function(fid,flid){
+  const fs=getFloristSession(state.activeSession,fid);
+  if(!fs.dupes) fs.dupes={};
+  const flower=(state.flowers||[]).find(x=>x.id===flid);
+  if(!flower) return;
+  // Créer un ID unique pour cette dupe
+  const dupeId='dupe_'+flid+'_'+uid();
+  const parentPrice=getSessionPrice(fid,flid);
+  fs.dupes[dupeId]={parentId:flid,name:flower.name+' (2)',price:parentPrice};
+  // Insérer après la fleur parente dans l'ordre
+  const idx=fs.flowerOrder.indexOf(flid);
+  if(idx>=0) fs.flowerOrder.splice(idx+1,0,dupeId);
+  else fs.flowerOrder.push(dupeId);
+  fs.selectedIds.push(dupeId);
   scheduleSave();renderMain();
 };
 window._copySel=function(fromFid,toFid){
