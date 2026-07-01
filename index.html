@@ -165,6 +165,33 @@ main{padding:16px;max-width:600px;margin:0 auto}
 .mix-qty-badge{background:var(--accent);color:#fff;border-radius:12px;padding:2px 10px;font-weight:700;font-size:.82rem}
 .mix-total-bar{height:8px;background:var(--surface2);border-radius:8px;overflow:hidden;margin:10px 0 6px}
 .mix-total-fill{height:100%;border-radius:8px;background:var(--accent);transition:width .4s}
+
+/* COMMANDES */
+.cmd-card{background:var(--surface);border-radius:var(--radius);padding:14px;margin-bottom:10px;border:1px solid var(--border);box-shadow:var(--shadow)}
+.cmd-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.cmd-fleuriste{font-family:'DM Serif Display',serif;font-size:1.1rem}
+.cmd-entreprise{font-size:.78rem;color:var(--text2)}
+.cmd-meta{font-size:.72rem;color:var(--text2);margin-top:2px}
+.cmd-statut{font-size:.72rem;padding:3px 10px;border-radius:12px;font-weight:600;white-space:nowrap}
+.cmd-statut.attente{background:#fff3e0;color:#e65100}
+.cmd-statut.prep{background:#e3f2fd;color:#1565c0}
+.cmd-statut.prete{background:#e8f5e9;color:#2e7d32}
+.cmd-line{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.cmd-line:last-child{border-bottom:none}
+.cmd-line.done{opacity:.5}
+.cmd-line.done .cmd-line-name{text-decoration:line-through}
+.cmd-check{width:26px;height:26px;border-radius:7px;border:2px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;font-size:.9rem}
+.cmd-check.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.cmd-line-info{flex:1;min-width:0}
+.cmd-line-name{font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmd-line-detail{font-size:.75rem;color:var(--text2)}
+.cmd-line-sub{font-weight:700;font-size:.82rem;color:var(--accent);white-space:nowrap}
+.cmd-progress{height:8px;background:var(--surface2);border-radius:8px;overflow:hidden;margin:10px 0 4px}
+.cmd-progress-fill{height:100%;border-radius:8px;background:var(--accent);transition:width .4s}
+.cmd-paste-area{width:100%;min-height:120px;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:.85rem;background:var(--surface);color:var(--text);resize:vertical}
+.cmd-paste-area:focus{outline:none;border-color:var(--accent)}
+.cmd-list-item{background:var(--surface);border-radius:10px;padding:12px;margin-bottom:8px;border:1px solid var(--border);box-shadow:var(--shadow);cursor:pointer;transition:border-color .15s}
+.cmd-list-item:active{border-color:var(--accent2)}
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:#fff;padding:10px 20px;border-radius:20px;font-size:.84rem;transition:transform .3s;z-index:9998;pointer-events:none}
 #toast.show{transform:translateX(-50%) translateY(0)}
 .empty{text-align:center;color:var(--text2);font-size:.88rem;padding:30px 0}
@@ -311,6 +338,8 @@ function defaultState(){
     mixPriorities: {}, // { flowerId: 1|2|3 }
     mixBudget: 100,
     mixFloristId: null,
+    commandes: {}, // { cmdId: {id,numero,fleuriste,entreprise,email,date,statut,lignes:[{nom,bottes,tiges,prixBotte,soustotal,coche}]} }
+    activeCommande: null,
   };
 }
 
@@ -324,9 +353,11 @@ function setSyncStatus(s){
   else if(s==='syncing'){el.textContent='⟳ Synchro…';el.className='sync-status syncing';}
   else{el.textContent='⚠ Hors ligne';el.className='sync-status error';}
 }
+let _localWriteTime=0;
 function pushToFirebase(){
   setSyncStatus('syncing');
-  set(ref(db,ROOT),{flowers:state.flowers,florists:state.florists,sessions:state.sessions,dispo:state.dispo||{}})
+  _localWriteTime=Date.now();
+  set(ref(db,ROOT),{flowers:state.flowers,florists:state.florists,sessions:state.sessions,dispo:state.dispo||{},commandes:state.commandes||{}})
     .then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
 }
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(pushToFirebase,800);}
@@ -334,16 +365,23 @@ function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(pushToFireb
 onValue(ref(db,ROOT),(snap)=>{
   try{
     const data=snap.val();
-    if(!data){pushToFirebase();}
-    else{
-      if(data.flowers&&Array.isArray(data.flowers)) state.flowers=data.flowers;
-      if(data.florists&&Array.isArray(data.florists)) state.florists=data.florists;
-      if(data.sessions) state.sessions=sanitizeSessions(data.sessions);
-      if(data.dispo) state.dispo=data.dispo;
+    if(!data){pushToFirebase();renderMain();return;}
+    // Si c'est notre propre écriture récente (< 2s) ET que l'app est déjà affichée,
+    // on ne re-render pas pour éviter de perdre le focus / scroll pendant la saisie
+    const isOwnWrite=(Date.now()-_localWriteTime)<2000;
+    if(isOwnWrite && _appRendered){
+      setSyncStatus('ok');
+      return;
     }
+    // Mise à jour depuis un autre appareil
+    if(data.flowers&&Array.isArray(data.flowers)) state.flowers=data.flowers;
+    if(data.florists&&Array.isArray(data.florists)) state.florists=data.florists;
+    if(data.sessions) state.sessions=sanitizeSessions(data.sessions);
+    if(data.dispo) state.dispo=data.dispo;
+    if(data.commandes) state.commandes=data.commandes;
     setSyncStatus('ok');
+    renderMain();
   }catch(e){console.error(e);setSyncStatus('error');}
-  renderMain();
 },(err)=>{console.error(err);setSyncStatus('error');renderMain();});
 
 function sanitizeSessions(sessions){
@@ -517,7 +555,7 @@ document.getElementById('headerDate').textContent=new Date().toLocaleDateString(
 // ── TABS ──────────────────────────────────────────────────────────────
 function renderTabs(){
   document.getElementById('tabBar').innerHTML=[
-    {id:'harvest',label:'🌿 Cueillette'},{id:'mix',label:'🎯 Mix'},{id:'dispo',label:'📦 Dispo'},{id:'summary',label:'📋 Récap'},
+    {id:'harvest',label:'🌿 Cueillette'},{id:'commandes',label:'📋 Commandes'},{id:'mix',label:'🎯 Mix'},{id:'dispo',label:'📦 Dispo'},{id:'summary',label:'📋 Récap'},
     {id:'catalog',label:'✏️ Fleurs'},{id:'florists',label:'🏪 Fleuristes'},
     {id:'backup',label:'💾 Sauvegarde'},
   ].map(t=>`<button class="tab ${state.activeTab===t.id?'active':''}" onclick="window._tab('${t.id}')">${t.label}</button>`).join('');
@@ -819,6 +857,193 @@ window._toggleGroup=function(fid){
   if(!state.expandedGroups) state.expandedGroups={};
   state.expandedGroups[fid]=!state.expandedGroups[fid];
   renderMain();
+};
+
+// ── COMMANDES ─────────────────────────────────────────────────────────
+function parseCommande(text){
+  const cmd={
+    id:'cmd_'+uid(),
+    numero:'',
+    fleuriste:'',
+    entreprise:'',
+    email:'',
+    date:'',
+    statut:'attente',
+    lignes:[],
+    importDate:todayKey()
+  };
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+
+  lines.forEach(line=>{
+    // Numéro de commande
+    let m=line.match(/commande[:\s#]*#?([a-f0-9]{6,})/i);
+    if(m && !cmd.numero) cmd.numero=m[1];
+    // Nom fleuriste
+    m=line.match(/^Nom[:\s]+(.+)$/i);
+    if(m) cmd.fleuriste=m[1].trim();
+    // Email
+    m=line.match(/^Email[:\s]+(.+)$/i);
+    if(m) cmd.email=m[1].trim();
+    // Entreprise
+    m=line.match(/^Entreprise[:\s]+(.+)$/i);
+    if(m) cmd.entreprise=m[1].trim();
+    // Date
+    m=line.match(/^Date[:\s]+(.+)$/i);
+    if(m && !cmd.date) cmd.date=m[1].trim();
+  });
+
+  // Parser les lignes de fleurs
+  // Format: "Nom fleur   Bottes   Tiges   €Prix/botte   €Sous-total"
+  // Ex: "Chasmantium 2 20 €4.00 €8.00"
+  lines.forEach(line=>{
+    // Ignorer les en-têtes et totaux
+    if(/^(fleur|total|informations|détail|numéro|date|statut|nom|email|entreprise|ferme|nouvelle|cette)/i.test(line)) return;
+    // Chercher le pattern : texte + 2 nombres + 2 montants €
+    const m=line.match(/^(.+?)\s+(\d+)\s+(\d+)\s+€?([\d.,]+)\s+€?([\d.,]+)$/);
+    if(m){
+      const nom=m[1].trim();
+      const bottes=parseInt(m[2])||0;
+      const tiges=parseInt(m[3])||0;
+      const prixBotte=parseFloat(m[4].replace(',','.'))||0;
+      const soustotal=parseFloat(m[5].replace(',','.'))||0;
+      if(nom && bottes>0){
+        cmd.lignes.push({nom,bottes,tiges,prixBotte,soustotal,coche:false});
+      }
+    }
+  });
+
+  return cmd;
+}
+
+function buildCommandes(){
+  // Vue détail d'une commande
+  if(state.activeCommande && state.commandes[state.activeCommande]){
+    return buildCommandeDetail(state.commandes[state.activeCommande]);
+  }
+
+  // Liste des commandes + zone d'import
+  const cmds=Object.values(state.commandes||{}).sort((a,b)=>(b.importDate||'').localeCompare(a.importDate||''));
+
+  const cmdList=cmds.length>0
+    ? cmds.map(c=>{
+        const done=c.lignes.filter(l=>l.coche).length;
+        const total=c.lignes.length;
+        const totalEuros=c.lignes.reduce((s,l)=>s+l.soustotal,0);
+        const statutLabels={attente:'En attente',prep:'En préparation',prete:'Prête'};
+        return `<div class="cmd-list-item" onclick="window._openCmd('${c.id}')">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="flex:1;min-width:0">
+              <div style="font-family:'DM Serif Display',serif;font-size:1rem">${c.fleuriste||'Sans nom'}</div>
+              <div style="font-size:.76rem;color:var(--text2)">${c.entreprise||''} ${c.numero?'· #'+c.numero:''}</div>
+            </div>
+            <span class="cmd-statut ${c.statut}">${statutLabels[c.statut]}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+            <span style="font-size:.78rem;color:var(--text2)">${done}/${total} préparées · ${totalEuros.toFixed(2)} €</span>
+            <span style="font-size:.72rem;color:var(--text2)">${c.importDate}</span>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="empty" style="padding:20px 0">Aucune commande. Collez le texte d\'un email de commande ci-dessous.</div>';
+
+  return `
+    <div class="cmd-card">
+      <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);margin-bottom:8px">Importer une commande</div>
+      <textarea class="cmd-paste-area" id="cmdPaste" placeholder="Colle ici le texte complet de l'email de commande (fleuriste, entreprise, et le tableau des fleurs)…"></textarea>
+      <button onclick="window._importCmd()" style="width:100%;padding:12px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-family:inherit;font-size:.88rem;font-weight:700;cursor:pointer;margin-top:8px">📥 Importer la commande</button>
+    </div>
+    <div class="section-title"><span>${cmds.length} commande(s)</span></div>
+    ${cmdList}`;
+}
+
+function buildCommandeDetail(c){
+  const done=c.lignes.filter(l=>l.coche).length;
+  const total=c.lignes.length;
+  const pct=total>0?(done/total)*100:0;
+  const totalEuros=c.lignes.reduce((s,l)=>s+l.soustotal,0);
+  const totalTiges=c.lignes.reduce((s,l)=>s+l.tiges,0);
+  const totalBottes=c.lignes.reduce((s,l)=>s+l.bottes,0);
+
+  // Lignes triées alphabétiquement
+  const sortedLignes=[...c.lignes].map((l,i)=>({...l,_idx:c.lignes.indexOf(l)}))
+    .sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
+
+  const statutLabels={attente:'En attente',prep:'En préparation',prete:'Prête'};
+
+  const lignesHTML=sortedLignes.map(l=>{
+    return `<div class="cmd-line${l.coche?' done':''}">
+      <div class="cmd-check ${l.coche?'on':''}" onclick="window._toggleLigne('${c.id}',${l._idx})">${l.coche?'✓':''}</div>
+      <div class="cmd-line-info">
+        <div class="cmd-line-name">${l.nom}</div>
+        <div class="cmd-line-detail">${l.bottes} botte${l.bottes>1?'s':''} · ${l.tiges} tiges · ${l.prixBotte.toFixed(2)}€/botte</div>
+      </div>
+      <div class="cmd-line-sub">${l.soustotal.toFixed(2)}€</div>
+    </div>`;
+  }).join('');
+
+  return `
+    <button onclick="window._closeCmd()" style="background:none;border:none;color:var(--accent);font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;margin-bottom:12px;padding:0">← Retour aux commandes</button>
+    <div class="cmd-card">
+      <div class="cmd-header">
+        <div style="flex:1;min-width:0">
+          <div class="cmd-fleuriste">${c.fleuriste||'Sans nom'}</div>
+          <div class="cmd-entreprise">${c.entreprise||''}</div>
+          <div class="cmd-meta">${c.numero?'#'+c.numero:''} ${c.email?'· '+c.email:''}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin:10px 0">
+        <button onclick="window._setStatut('${c.id}','attente')" class="cmd-statut attente" style="border:none;cursor:pointer;opacity:${c.statut==='attente'?1:.4}">En attente</button>
+        <button onclick="window._setStatut('${c.id}','prep')" class="cmd-statut prep" style="border:none;cursor:pointer;opacity:${c.statut==='prep'?1:.4}">En préparation</button>
+        <button onclick="window._setStatut('${c.id}','prete')" class="cmd-statut prete" style="border:none;cursor:pointer;opacity:${c.statut==='prete'?1:.4}">Prête</button>
+      </div>
+      <div class="cmd-progress"><div class="cmd-progress-fill" style="width:${pct}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text2)">
+        <span>${done}/${total} fleurs préparées</span>
+        <span>${totalBottes} bottes · ${totalTiges} tiges · <strong style="color:var(--accent)">${totalEuros.toFixed(2)} €</strong></span>
+      </div>
+    </div>
+    <div class="cmd-card">
+      ${lignesHTML}
+    </div>
+    <button onclick="window._deleteCmd('${c.id}')" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;background:transparent;font-family:inherit;font-size:.84rem;color:var(--danger);cursor:pointer">🗑 Supprimer cette commande</button>`;
+}
+
+window._importCmd=function(){
+  const txt=document.getElementById('cmdPaste').value.trim();
+  if(!txt){alert('Colle d\'abord le texte de la commande.');return;}
+  const cmd=parseCommande(txt);
+  if(cmd.lignes.length===0){
+    alert('Aucune ligne de fleur détectée. Vérifie que tu as bien collé le tableau des fleurs (format: Nom Bottes Tiges €Prix €Soustotal).');
+    return;
+  }
+  if(!state.commandes) state.commandes={};
+  state.commandes[cmd.id]=cmd;
+  pushToFirebase();
+  state.activeCommande=cmd.id;
+  renderMain();
+  showToast('Commande importée : '+cmd.lignes.length+' fleurs');
+};
+window._openCmd=function(id){state.activeCommande=id;renderMain();};
+window._closeCmd=function(){state.activeCommande=null;renderMain();};
+window._toggleLigne=function(cmdId,idx){
+  const c=state.commandes[cmdId];if(!c)return;
+  c.lignes[idx].coche=!c.lignes[idx].coche;
+  // Auto-statut : si toutes cochées → prête, si au moins une → prep
+  const done=c.lignes.filter(l=>l.coche).length;
+  if(done===c.lignes.length) c.statut='prete';
+  else if(done>0) c.statut='prep';
+  else c.statut='attente';
+  pushToFirebase();renderMain();
+};
+window._setStatut=function(cmdId,s){
+  const c=state.commandes[cmdId];if(!c)return;
+  c.statut=s;pushToFirebase();renderMain();
+};
+window._deleteCmd=function(cmdId){
+  if(!confirm('Supprimer cette commande ?'))return;
+  delete state.commandes[cmdId];
+  state.activeCommande=null;
+  pushToFirebase();renderMain();
 };
 
 // ── MIX ───────────────────────────────────────────────────────────────
@@ -1291,10 +1516,12 @@ window.pushToFirebase=pushToFirebase;
 window.showToast=showToast;
 
 // ── RENDER ────────────────────────────────────────────────────────────
+let _appRendered=false;
 function renderMain(){
+  _appRendered=true;
   renderTabs();
   const m=document.getElementById('mainContent');
-  const builders={harvest:buildHarvest,mix:buildMix,dispo:buildDispo,summary:buildSummary,catalog:buildCatalog,florists:buildFlorists,backup:buildBackup};
+  const builders={harvest:buildHarvest,commandes:buildCommandes,mix:buildMix,dispo:buildDispo,summary:buildSummary,catalog:buildCatalog,florists:buildFlorists,backup:buildBackup};
   try{m.innerHTML=(builders[state.activeTab]||buildHarvest)();}
   catch(e){console.error('Render error',e);m.innerHTML=`<div class="empty">Erreur d'affichage</div>`;}
 }
