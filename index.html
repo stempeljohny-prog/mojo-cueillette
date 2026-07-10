@@ -176,6 +176,7 @@ main{padding:16px;max-width:600px;margin:0 auto}
 .cmd-statut.attente{background:#fff3e0;color:#e65100}
 .cmd-statut.prep{background:#e3f2fd;color:#1565c0}
 .cmd-statut.prete{background:#e8f5e9;color:#2e7d32}
+.cmd-statut.terminee{background:#f3e5f5;color:#6a1b9a}
 .cmd-line{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
 .cmd-line:last-child{border-bottom:none}
 .cmd-line.done{opacity:.5}
@@ -338,8 +339,10 @@ function defaultState(){
     mixPriorities: {}, // { flowerId: 1|2|3 }
     mixBudget: 100,
     mixFloristId: null,
-    commandes: {}, // { cmdId: {id,numero,fleuriste,entreprise,email,date,statut,lignes:[{nom,bottes,tiges,prixBotte,soustotal,coche}]} }
+    commandes: {}, // { cmdId: {...} }
     activeCommande: null,
+    sechees: [], // [{id,name,pu,stock}] stock = nombre de bottes
+
   };
 }
 
@@ -357,7 +360,7 @@ let _localWriteTime=0;
 function pushToFirebase(){
   setSyncStatus('syncing');
   _localWriteTime=Date.now();
-  set(ref(db,ROOT),{flowers:state.flowers,florists:state.florists,sessions:state.sessions,dispo:state.dispo||{},commandes:state.commandes||{}})
+  set(ref(db,ROOT),{flowers:state.flowers,florists:state.florists,sessions:state.sessions,dispo:state.dispo||{},commandes:state.commandes||{},sechees:state.sechees||[]})
     .then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
 }
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(pushToFirebase,800);}
@@ -379,6 +382,7 @@ onValue(ref(db,ROOT),(snap)=>{
     if(data.sessions) state.sessions=sanitizeSessions(data.sessions);
     if(data.dispo) state.dispo=data.dispo;
     if(data.commandes) state.commandes=data.commandes;
+    if(data.sechees&&Array.isArray(data.sechees)) state.sechees=data.sechees;
     setSyncStatus('ok');
     renderMain();
   }catch(e){console.error(e);setSyncStatus('error');}
@@ -555,7 +559,7 @@ document.getElementById('headerDate').textContent=new Date().toLocaleDateString(
 // ── TABS ──────────────────────────────────────────────────────────────
 function renderTabs(){
   document.getElementById('tabBar').innerHTML=[
-    {id:'harvest',label:'🌿 Cueillette'},{id:'commandes',label:'📋 Commandes'},{id:'mix',label:'🎯 Mix'},{id:'dispo',label:'📦 Dispo'},{id:'summary',label:'📋 Récap'},
+    {id:'harvest',label:'🌿 Cueillette'},{id:'commandes',label:'📋 Commandes'},{id:'sechees',label:'🥀 Séchées'},{id:'mix',label:'🎯 Mix'},{id:'dispo',label:'📦 Dispo'},{id:'summary',label:'📋 Récap'},
     {id:'catalog',label:'✏️ Fleurs'},{id:'florists',label:'🏪 Fleuristes'},
     {id:'backup',label:'💾 Sauvegarde'},
   ].map(t=>`<button class="tab ${state.activeTab===t.id?'active':''}" onclick="window._tab('${t.id}')">${t.label}</button>`).join('');
@@ -929,7 +933,7 @@ function buildCommandes(){
         const done=c.lignes.filter(l=>l.coche).length;
         const total=c.lignes.length;
         const totalEuros=c.lignes.reduce((s,l)=>s+l.soustotal,0);
-        const statutLabels={attente:'En attente',prep:'En préparation',prete:'Prête'};
+        const statutLabels={attente:'En attente',prep:'En préparation',prete:'Prête',terminee:'Terminée'};
         return `<div class="cmd-list-item" onclick="window._openCmd('${c.id}')">
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
             <div style="flex:1;min-width:0">
@@ -964,22 +968,42 @@ function buildCommandeDetail(c){
   const totalTiges=c.lignes.reduce((s,l)=>s+l.tiges,0);
   const totalBottes=c.lignes.reduce((s,l)=>s+l.bottes,0);
 
-  // Lignes triées alphabétiquement
-  const sortedLignes=[...c.lignes].map((l,i)=>({...l,_idx:c.lignes.indexOf(l)}))
+  const sortedLignes=[...c.lignes].map(l=>({...l,_idx:c.lignes.indexOf(l)}))
     .sort((a,b)=>a.nom.localeCompare(b.nom,'fr'));
 
-  const statutLabels={attente:'En attente',prep:'En préparation',prete:'Prête'};
+  // Autres commandes du même fleuriste pour fusion
+  const sameFleuriste=Object.values(state.commandes||{}).filter(x=>
+    x.id!==c.id && x.fleuriste===c.fleuriste && c.fleuriste
+  );
+  const mergeBtns=sameFleuriste.length>0
+    ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+        <div style="font-size:.72rem;color:var(--text2);margin-bottom:6px">Fusionner avec une autre commande de ${c.fleuriste} :</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${sameFleuriste.map(x=>`<button onclick="window._mergeCmd('${c.id}','${x.id}')" style="padding:5px 10px;border-radius:16px;border:1.5px solid var(--accent2);background:transparent;color:var(--accent);font-family:inherit;font-size:.75rem;font-weight:600;cursor:pointer">➕ ${x.numero?'#'+x.numero:x.importDate} (${x.lignes.length} fl.)</button>`).join('')}
+        </div>
+      </div>`
+    : '';
 
   const lignesHTML=sortedLignes.map(l=>{
     return `<div class="cmd-line${l.coche?' done':''}">
       <div class="cmd-check ${l.coche?'on':''}" onclick="window._toggleLigne('${c.id}',${l._idx})">${l.coche?'✓':''}</div>
       <div class="cmd-line-info">
         <div class="cmd-line-name">${l.nom}</div>
-        <div class="cmd-line-detail">${l.bottes} botte${l.bottes>1?'s':''} · ${l.tiges} tiges · ${l.prixBotte.toFixed(2)}€/botte</div>
+        <div class="cmd-line-detail" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <input type="number" min="0" value="${l.bottes}" inputmode="numeric" onblur="window._editLigne('${c.id}',${l._idx},'bottes',this.value)" style="width:38px;border:none;border-bottom:1px solid var(--border);background:transparent;font-family:inherit;font-size:.75rem;color:var(--text2);text-align:center;-moz-appearance:textfield;appearance:textfield"> b ·
+          <input type="number" min="0" value="${l.tiges}" inputmode="numeric" onblur="window._editLigne('${c.id}',${l._idx},'tiges',this.value)" style="width:42px;border:none;border-bottom:1px solid var(--border);background:transparent;font-family:inherit;font-size:.75rem;color:var(--text2);text-align:center;-moz-appearance:textfield;appearance:textfield"> t ·
+          <input type="number" step="0.05" min="0" value="${l.prixBotte.toFixed(2)}" inputmode="decimal" onblur="window._editLigne('${c.id}',${l._idx},'prixBotte',this.value)" style="width:48px;border:none;border-bottom:1px solid var(--border);background:transparent;font-family:inherit;font-size:.75rem;color:var(--text2);text-align:center;-moz-appearance:textfield;appearance:textfield"> €/b
+        </div>
       </div>
-      <div class="cmd-line-sub">${l.soustotal.toFixed(2)}€</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+        <div class="cmd-line-sub">${l.soustotal.toFixed(2)}€</div>
+        <button onclick="window._delLigne('${c.id}',${l._idx})" style="background:none;border:none;color:#ccc;font-size:.8rem;cursor:pointer;padding:0">✕</button>
+      </div>
     </div>`;
   }).join('');
+
+  // Liste catalogue pour ajout
+  const catalogOpts=(state.flowers||[]).map(f=>`<option value="${f.name}">`).join('');
 
   return `
     <button onclick="window._closeCmd()" style="background:none;border:none;color:var(--accent);font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;margin-bottom:12px;padding:0">← Retour aux commandes</button>
@@ -991,19 +1015,26 @@ function buildCommandeDetail(c){
           <div class="cmd-meta">${c.numero?'#'+c.numero:''} ${c.email?'· '+c.email:''}</div>
         </div>
       </div>
-      <div style="display:flex;gap:6px;margin:10px 0">
+      <div style="display:flex;gap:6px;margin:10px 0;flex-wrap:wrap">
         <button onclick="window._setStatut('${c.id}','attente')" class="cmd-statut attente" style="border:none;cursor:pointer;opacity:${c.statut==='attente'?1:.4}">En attente</button>
         <button onclick="window._setStatut('${c.id}','prep')" class="cmd-statut prep" style="border:none;cursor:pointer;opacity:${c.statut==='prep'?1:.4}">En préparation</button>
         <button onclick="window._setStatut('${c.id}','prete')" class="cmd-statut prete" style="border:none;cursor:pointer;opacity:${c.statut==='prete'?1:.4}">Prête</button>
+        <button onclick="window._setStatut('${c.id}','terminee')" class="cmd-statut" style="border:none;cursor:pointer;background:#f3e5f5;color:#6a1b9a;opacity:${c.statut==='terminee'?1:.4}">✓ Terminée</button>
       </div>
       <div class="cmd-progress"><div class="cmd-progress-fill" style="width:${pct}%"></div></div>
       <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text2)">
         <span>${done}/${total} fleurs préparées</span>
         <span>${totalBottes} bottes · ${totalTiges} tiges · <strong style="color:var(--accent)">${totalEuros.toFixed(2)} €</strong></span>
       </div>
+      ${mergeBtns}
     </div>
     <div class="cmd-card">
-      ${lignesHTML}
+      ${lignesHTML||'<div class="empty" style="padding:14px 0">Aucune ligne</div>'}
+      <div style="display:flex;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+        <input id="addLigneName" list="catalogNames" placeholder="Ajouter une fleur du catalogue…" style="flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;background:var(--surface);color:var(--text)">
+        <datalist id="catalogNames">${catalogOpts}</datalist>
+        <button onclick="window._addLigne('${c.id}')" class="btn-add" style="padding:8px 12px">+ </button>
+      </div>
     </div>
     <button onclick="window._deleteCmd('${c.id}')" style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;background:transparent;font-family:inherit;font-size:.84rem;color:var(--danger);cursor:pointer">🗑 Supprimer cette commande</button>`;
 }
@@ -1045,6 +1076,126 @@ window._deleteCmd=function(cmdId){
   state.activeCommande=null;
   pushToFirebase();renderMain();
 };
+window._editLigne=function(cmdId,idx,field,val){
+  const c=state.commandes[cmdId];if(!c||!c.lignes[idx])return;
+  const l=c.lignes[idx];
+  if(field==='bottes'){l.bottes=parseInt(val)||0;l.soustotal=l.bottes*l.prixBotte;}
+  else if(field==='tiges'){l.tiges=parseInt(val)||0;}
+  else if(field==='prixBotte'){l.prixBotte=parseFloat(val)||0;l.soustotal=l.bottes*l.prixBotte;}
+  pushToFirebase();renderMain();
+};
+window._delLigne=function(cmdId,idx){
+  const c=state.commandes[cmdId];if(!c)return;
+  c.lignes.splice(idx,1);
+  pushToFirebase();renderMain();
+};
+window._addLigne=function(cmdId){
+  const c=state.commandes[cmdId];if(!c)return;
+  const name=document.getElementById('addLigneName').value.trim();
+  if(!name)return;
+  // Chercher le prix dans le catalogue (prix/tige → on estime botte = 10 tiges)
+  const flower=(state.flowers||[]).find(f=>f.name.toLowerCase()===name.toLowerCase());
+  const prixTige=flower?flower.price:0;
+  const prixBotte=prixTige*10; // 1 botte = 10 tiges
+  c.lignes.push({nom:name,bottes:1,tiges:10,prixBotte:prixBotte,soustotal:prixBotte,coche:false});
+  pushToFirebase();renderMain();
+};
+window._mergeCmd=function(targetId,sourceId){
+  const target=state.commandes[targetId];
+  const source=state.commandes[sourceId];
+  if(!target||!source)return;
+  if(!confirm('Fusionner ces deux commandes ? Les lignes de la commande #'+(source.numero||source.importDate)+' seront ajoutées à celle-ci, puis l\'autre sera supprimée.'))return;
+  // Ajouter les lignes de source à target
+  source.lignes.forEach(l=>target.lignes.push({...l}));
+  delete state.commandes[sourceId];
+  pushToFirebase();renderMain();
+  showToast('Commandes fusionnées');
+};
+
+// ── SÉCHÉES ───────────────────────────────────────────────────────────
+function buildSechees(){
+  const sechees=state.sechees||[];
+  const sorted=[...sechees].sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+
+  const totalValue=sechees.reduce((s,f)=>s+(f.stock||0)*(f.pu||0),0);
+  const totalBottes=sechees.reduce((s,f)=>s+(f.stock||0),0);
+
+  const rows=sorted.map(f=>{
+    const stock=f.stock||0;
+    const pu=f.pu||0;
+    const val=(stock*pu).toFixed(2);
+    return `<div class="dispo-row${stock>0?' has-dispo':''}">
+      <div style="flex:1;min-width:0">
+        <input type="text" value="${f.name}" onblur="window._editSec('${f.id}','name',this.value)" style="border:none;background:transparent;font-family:inherit;font-size:.9rem;font-weight:600;color:var(--text);width:100%;padding:0">
+        <div style="display:flex;align-items:center;gap:4px;margin-top:2px">
+          <input type="number" step="0.10" min="0" value="${pu.toFixed(2)}" inputmode="decimal" onblur="window._editSec('${f.id}','pu',this.value)" style="width:52px;border:none;border-bottom:1px solid var(--border);background:transparent;font-family:inherit;font-size:.75rem;font-weight:600;color:var(--accent);text-align:right;-moz-appearance:textfield;appearance:textfield">
+          <span style="font-size:.72rem;color:var(--text2)">€/botte${stock>0?' · <strong style="color:var(--accent)">'+val+' €</strong>':''}</span>
+        </div>
+      </div>
+      <div class="qty-ctrl">
+        <button class="qty-btn" onclick="window._secStock('${f.id}',-1)">−</button>
+        <input class="qty-input" inputmode="numeric" pattern="[0-9]*" value="${stock}" onfocus="this.select()" onblur="window._editSec('${f.id}','stock',this.value)" style="width:40px">
+        <button class="qty-btn" onclick="window._secStock('${f.id}',1)">+</button>
+      </div>
+      <button onclick="window._delSec('${f.id}')" style="background:none;border:none;color:#ccc;font-size:.9rem;cursor:pointer;padding:2px">✕</button>
+    </div>`;
+  }).join('');
+
+  return `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--text2)">Stock fleurs séchées</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:1.6rem">${totalBottes} <span style="font-size:1rem;color:var(--text2)">bottes</span></div>
+        <div style="font-size:.9rem;color:var(--accent);font-weight:600;margin-top:2px">${totalValue.toFixed(2)} € valeur stock</div>
+      </div>
+    </div>
+    <div class="add-row" style="margin-bottom:14px">
+      <input id="secName" placeholder="Nouvelle fleur séchée…">
+      <input id="secPu" type="number" step="0.10" min="0" placeholder="Prix/botte" style="width:90px;padding:9px 8px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.82rem;background:var(--surface);color:var(--text);-moz-appearance:textfield;appearance:textfield">
+      <button class="btn-add" onclick="window._addSec()">+ </button>
+    </div>
+    <div class="search-bar" style="margin-bottom:10px"><span>🔍</span>
+      <input id="secSearch" placeholder="Rechercher…" oninput="window._fsec(this.value)" autocomplete="off" spellcheck="false">
+      <button onclick="window._fsecc()" style="display:none;background:none;border:none;cursor:pointer;color:var(--text2)" id="clearSecSearch">✕</button>
+    </div>
+    <div class="section-title"><span>${sechees.length} variété(s) séchée(s)</span></div>
+    <div id="secList">${rows||'<div class="empty">Aucune fleur séchée. Ajoute-en une ci-dessus.</div>'}</div>`;
+}
+
+window._addSec=function(){
+  const name=document.getElementById('secName').value.trim();
+  const pu=parseFloat(document.getElementById('secPu').value)||0;
+  if(!name)return;
+  if(!state.sechees)state.sechees=[];
+  state.sechees.push({id:'sec_'+uid(),name,pu,stock:0});
+  pushToFirebase();renderMain();
+};
+window._editSec=function(id,field,val){
+  const f=(state.sechees||[]).find(x=>x.id===id);if(!f)return;
+  if(field==='name')f.name=val;
+  else if(field==='pu')f.pu=parseFloat(val)||0;
+  else if(field==='stock')f.stock=Math.max(0,parseInt(val)||0);
+  pushToFirebase();renderMain();
+};
+window._secStock=function(id,d){
+  const f=(state.sechees||[]).find(x=>x.id===id);if(!f)return;
+  f.stock=Math.max(0,(f.stock||0)+d);
+  pushToFirebase();renderMain();
+};
+window._delSec=function(id){
+  if(!confirm('Supprimer cette fleur séchée ?'))return;
+  state.sechees=(state.sechees||[]).filter(f=>f.id!==id);
+  pushToFirebase();renderMain();
+};
+window._fsec=function(q){
+  const v=q.toLowerCase();
+  document.querySelectorAll('#secList .dispo-row').forEach(r=>{
+    const n=r.querySelector('input[type=text]');
+    if(n)r.style.display=(!v||n.value.toLowerCase().includes(v))?'':'none';
+  });
+  const b=document.getElementById('clearSecSearch');if(b)b.style.display=v?'':'none';
+};
+window._fsecc=function(){const i=document.getElementById('secSearch');if(i){i.value='';i.focus();}window._fsec('');};
 
 // ── MIX ───────────────────────────────────────────────────────────────
 function buildMix(){
@@ -1403,8 +1554,25 @@ function buildSummary(){
       ${fd.map(({c,items,total,qty,fsPrices})=>{const b=c.budget||0,pct=b>0?Math.min((total/b)*100,100):0,bc=total>b?'over':total>b*.85?'warn':'';return`<div class="summary-florist"><div class="sf-name">${c.name}<span class="sf-total">${total.toFixed(2)} €${b>0?' / '+b.toFixed(0)+' €':''}</span></div>${items.map(f=>{const q=qty[f.id]||0;const p=fsPrices[f.id]!=null?fsPrices[f.id]:f.price;return`<div class="sf-row"><span>${f.name} × ${q}${fsPrices[f.id]!=null?' <span style="font-size:.7rem;color:var(--warning)">✎'+p.toFixed(2)+'€</span>':''}</span><span>${(q*p).toFixed(2)} €</span></div>`;}).join('')}${b>0?`<div class="sf-budget-bar"><div class="sf-budget-fill ${bc}" style="width:${pct}%"></div></div>`:''}</div>`;}).join('')}
     </div>`;
   });
-  if(!hasAny)return'<div class="empty">Aucune quantité saisie</div>';
-  return html+`<button class="btn-export" onclick="window._share()">📤 Partager la session en cours</button><button class="btn-reset" onclick="window._resetAll()">🗑 Réinitialiser toutes les sessions</button>`;
+  // Commandes terminées
+  const cmdTerminees=Object.values(state.commandes||{}).filter(c=>c.statut==='terminee');
+  let cmdHtml='';
+  if(cmdTerminees.length>0){
+    cmdHtml='<div style="margin-top:24px"><div style="font-family:\'DM Serif Display\',serif;font-size:1.1rem;margin-bottom:10px">📋 Commandes terminées</div>';
+    cmdTerminees.sort((a,b)=>(b.importDate||'').localeCompare(a.importDate||'')).forEach(c=>{
+      const totalE=c.lignes.reduce((s,l)=>s+l.soustotal,0);
+      const totalB=c.lignes.reduce((s,l)=>s+l.bottes,0);
+      cmdHtml+=`<div class="summary-florist">
+        <div class="sf-name">${c.fleuriste||'Sans nom'}<span class="sf-total">${totalE.toFixed(2)} €</span></div>
+        <div style="font-size:.75rem;color:var(--text2);margin-bottom:6px">${c.entreprise||''} ${c.numero?'· #'+c.numero:''} · ${c.importDate}</div>
+        ${c.lignes.map(l=>`<div class="sf-row"><span>${l.nom} × ${l.bottes}b</span><span>${l.soustotal.toFixed(2)} €</span></div>`).join('')}
+      </div>`;
+    });
+    cmdHtml+='</div>';
+  }
+
+  if(!hasAny && !cmdHtml)return'<div class="empty">Aucune quantité saisie</div>';
+  return html+cmdHtml+`<button class="btn-export" onclick="window._share()">📤 Partager la session en cours</button><button class="btn-reset" onclick="window._resetAll()">🗑 Réinitialiser toutes les sessions</button>`;
 }
 
 window._share=function(){
@@ -1430,6 +1598,11 @@ function buildCatalog(){
       <input id="catalogSearch" placeholder="Rechercher…" oninput="window._fc(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
       <button id="clearSearch" onclick="window._fcc()" style="display:none;background:none;border:none;cursor:pointer;color:var(--text2)">✕</button>
     </div>
+    <div class="add-row" style="margin-bottom:12px">
+      <input id="nfName" placeholder="Nouvelle variété…">
+      <input id="nfPrice" type="number" step="0.05" min="0" placeholder="0.00" style="width:75px;padding:9px 8px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.86rem;background:var(--surface);color:var(--text);-moz-appearance:textfield;appearance:textfield">
+      <button class="btn-add" onclick="window._af()">+ Ajouter</button>
+    </div>
     <div class="section-title"><span>Catalogue — ${sorted.length} variétés</span></div>
     <div id="catalogList">
       ${sorted.map(f=>{
@@ -1452,11 +1625,6 @@ function buildCatalog(){
           <button class="del-btn" onclick="window._df('${f.id}')">✕</button>
         </div>${isOpen?varRows+addVarRow:''}`;
       }).join('')}
-    </div>
-    <div class="add-row" style="margin-top:12px">
-      <input id="nfName" placeholder="Nouvelle variété…">
-      <input id="nfPrice" type="number" step="0.05" min="0" placeholder="0.00" style="width:75px;padding:9px 8px;border:1.5px solid var(--border);border-radius:9px;font-family:inherit;font-size:.86rem;background:var(--surface);color:var(--text);-moz-appearance:textfield;appearance:textfield">
-      <button class="btn-add" onclick="window._af()">+ Ajouter</button>
     </div>`;
 }
 window._fc=function(q){const v=q.toLowerCase();document.querySelectorAll('#catalogList .catalog-row').forEach(r=>{const n=r.querySelector('input[type=text]');if(n)r.style.display=(!v||n.value.toLowerCase().includes(v))?'':'none';});const b=document.getElementById('clearSearch');if(b)b.style.display=v?'':'none';};
@@ -1508,7 +1676,7 @@ function buildBackup(){
     <div class="save-section"><div class="save-title">⚠️ Réinitialisation</div>
     <button class="btn-reset" onclick="window._hard()">Réinitialiser complètement</button></div>`;
 }
-window._exp=function(){const blob=new Blob([JSON.stringify({flowers:state.flowers,florists:state.florists,sessions:state.sessions,dispo:state.dispo||{}},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`mojo-${todayKey()}.json`;a.click();URL.revokeObjectURL(url);showToast('Téléchargé !');};
+window._exp=function(){const blob=new Blob([JSON.stringify({flowers:state.flowers,florists:state.florists,sessions:state.sessions,dispo:state.dispo||{},commandes:state.commandes||{},sechees:state.sechees||[]},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`mojo-${todayKey()}.json`;a.click();URL.revokeObjectURL(url);showToast('Téléchargé !');};
 window._importJSON=function(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const imp=JSON.parse(e.target.result);if(!imp.flowers||!imp.florists)throw new Error();if(confirm('Importer et écraser Firebase ?')){state.flowers=imp.flowers;state.florists=imp.florists;state.sessions=imp.sessions||{};pushToFirebase();renderMain();showToast('Importé !');}}catch(e){alert('Fichier invalide.');}};reader.readAsText(file);input.value='';};
 window._lock=function(){localStorage.removeItem('mojo_auth');document.getElementById('lockScreen').style.display='flex';};
 window._hard=function(){if(confirm('⚠️ Tout effacer y compris Firebase ?')){const s=defaultState();state.flowers=s.flowers;state.florists=s.florists;state.sessions={};pushToFirebase();renderMain();showToast('Réinitialisé');}};
@@ -1521,7 +1689,7 @@ function renderMain(){
   _appRendered=true;
   renderTabs();
   const m=document.getElementById('mainContent');
-  const builders={harvest:buildHarvest,commandes:buildCommandes,mix:buildMix,dispo:buildDispo,summary:buildSummary,catalog:buildCatalog,florists:buildFlorists,backup:buildBackup};
+  const builders={harvest:buildHarvest,commandes:buildCommandes,sechees:buildSechees,mix:buildMix,dispo:buildDispo,summary:buildSummary,catalog:buildCatalog,florists:buildFlorists,backup:buildBackup};
   try{m.innerHTML=(builders[state.activeTab]||buildHarvest)();}
   catch(e){console.error('Render error',e);m.innerHTML=`<div class="empty">Erreur d'affichage</div>`;}
 }
