@@ -568,7 +568,7 @@ function renderTabs(){
 window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
 // ═══ MODULE SEMIS ═══════════════════════════════════════════════════
 (function(){
-  var DEF={sub:'plants',marge:40,largeur:0.80,ecarts:[15,23,33],motte:'petite',plateau:'botanic',override:null,
+  var DEF={sub:'plants',marge:40,largeur:0.80,ecarts:[15,23,33],motte:'petite',plateau:'botanic',override:null,melange:true,
     caps:{ikea:{nom:'Gris Ikea',petite:70,grosse:40},botanic:{nom:'Botanic',petite:140,grosse:70},noir:{nom:'Noir',petite:140,grosse:70}},
     ecartMemo:{}, series:[], serieActive:null};
   var SM;
@@ -690,7 +690,17 @@ window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
     '.sm-prog>div{height:100%;background:var(--accent);border-radius:8px;transition:width .4s}'+
     '.sm-memo{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:.85rem}'+
     '.sm-memo:last-child{border-bottom:0}'+
-    '.sm-memo button{background:none;border:none;color:#ccc;font-size:.85rem;cursor:pointer;padding:0 0 0 8px}';
+    '.sm-memo button{background:none;border:none;color:#ccc;font-size:.85rem;cursor:pointer;padding:0 0 0 8px}'+
+    '.sm-seg{display:flex;background:var(--surface2);border-radius:10px;padding:3px;margin-bottom:12px}'+
+    '.sm-seg button{flex:1;padding:7px 4px;border:none;background:transparent;border-radius:8px;font-family:inherit;font-size:.78rem;font-weight:500;cursor:pointer;color:var(--text2)}'+
+    '.sm-seg button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}'+
+    '.sm-grp{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);font-weight:600;margin:14px 0 4px}'+
+    '.sm-pl{display:flex;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--border);font-size:.84rem}'+
+    '.sm-pl:last-child{border-bottom:0}'+
+    '.sm-pl-n{flex:0 0 auto;width:66px;font-size:.72rem;color:var(--text2);font-weight:600}'+
+    '.sm-pl-c{flex:1;min-width:0}'+
+    '.sm-pl-c b{color:var(--accent);font-weight:700}'+
+    '.sm-pl-r{flex:0 0 auto;font-size:.72rem;color:var(--text2)}';
     document.head.appendChild(s);
   }
 
@@ -779,36 +789,105 @@ window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
   }
 
   // ── PLATEAUX ──────────────────────────────────────────────────────
+  // Un plateau ne peut accueillir que des mottes de meme taille :
+  // on regroupe donc par (type de plateau + taille de motte).
+  function groupes(){
+    var g={}, ordre=[];
+    LG().forEach(function(l){
+      var c=calc(l); if(c.semis<=0) return;
+      var mo=l.motte||SM.motte, pl=l.plateau||SM.plateau, k=pl+'|'+mo;
+      if(!g[k]){ g[k]={plateau:pl,motte:mo,cap:cap(pl,mo),items:[]}; ordre.push(k); }
+      g[k].items.push({nom:l.variete||'—',semis:c.semis});
+    });
+    return ordre.map(function(k){return g[k];});
+  }
+  // Remplissage sequentiel : une variete peut deborder sur le plateau suivant
+  function remplir(gr){
+    if(!gr.cap) return {trays:[],reste:0};
+    var trays=[], cur=null, rest=0;
+    gr.items.forEach(function(it){
+      var q=it.semis;
+      while(q>0){
+        if(!cur||rest===0){ cur={contenu:[]}; trays.push(cur); rest=gr.cap; }
+        var take=Math.min(q,rest);
+        cur.contenu.push({nom:it.nom,n:take});
+        q-=take; rest-=take;
+      }
+    });
+    return {trays:trays,reste:rest};
+  }
+
   function viewPlateaux(){
+    var gs=groupes(), totMix=0, totSep=0;
+    gs.forEach(function(g){
+      if(!g.cap) return;
+      totMix+=remplir(g).trays.length;
+      g.items.forEach(function(it){ totSep+=Math.ceil(it.semis/g.cap); });
+    });
+    var eco=totSep-totMix;
+
+    var h='<div class="sm-seg">'
+     + '<button class="'+(SM.melange?'on':'')+'" onclick="smMelange(1)">Mélanger</button>'
+     + '<button class="'+(SM.melange?'':'on')+'" onclick="smMelange(0)">1 variété / plateau</button></div>';
+
+    h+='<div class="sm-tot"><h3>Plateaux à préparer</h3>'
+     + '<div class="sm-tl"><span>'+(SM.melange?'En mélangeant':'Une variété par plateau')+'</span><strong>'
+     + nf(SM.melange?totMix:totSep)+'</strong></div>'
+     + '<div class="sm-tl s"><span>'+(SM.melange?'Si une variété par plateau':'En mélangeant')+'</span><strong>'
+     + nf(SM.melange?totSep:totMix)+'</strong></div>'
+     + (eco>0?'<div class="sm-tl s"><span>Économie du mélange</span><strong>'+nf(eco)+' plateaux</strong></div>':'')
+     + '</div>';
+
+    if(!gs.length) return h+'<div class="sm-card"><p class="sm-empty">Aucune variété avec une surface saisie.</p></div>';
+
+    if(SM.melange){
+      h+='<div class="sm-card"><h3>Plan de remplissage</h3>';
+      gs.forEach(function(g){
+        var r=remplir(g), n=0;
+        h+='<div class="sm-grp">'+SM.caps[g.plateau].nom+' · motte '+g.motte+' · '+g.cap+' alvéoles</div>';
+        if(!g.cap){ h+='<p class="sm-empty" style="padding:8px 0">Capacité non définie.</p>'; return; }
+        r.trays.forEach(function(t,idx){
+          n=idx+1;
+          var rempli=t.contenu.reduce(function(s,x){return s+x.n;},0);
+          h+='<div class="sm-pl"><div class="sm-pl-n">Plateau '+n+'</div>'
+           + '<div class="sm-pl-c">'+t.contenu.map(function(x){return x.nom+' <b>'+nf(x.n)+'</b>';}).join(' · ')+'</div>'
+           + '<div class="sm-pl-r">'+(rempli<g.cap?rempli+'/'+g.cap:'plein')+'</div></div>';
+        });
+      });
+      h+='<p class="sm-note">Une variété qui dépasse la capacité continue sur le plateau suivant. '
+       + '<b>Regroupe des variétés à levée comparable</b> dans un même plateau : si l\'une lève en 4 jours et l\'autre en 3 semaines, tu ne peux plus arroser ni sortir le plateau correctement.</p></div>';
+    } else {
+      h+='<div class="sm-card sm-tab"><h3>Détail par variété</h3>'
+       + '<table><thead><tr><th>Variété</th><th>Semis</th><th>Motte</th><th>Plateau</th><th>Pl.</th></tr></thead><tbody>';
+      LG().forEach(function(l,i){
+        var c2=calc(l), mo=l.motte||SM.motte, pl=l.plateau||SM.plateau;
+        var cc=cap(pl,mo), n=cc>0?Math.ceil(c2.semis/cc):0;
+        h+='<tr><td>'+(l.variete||'—')+(l.fait?' ✓':'')+'</td><td>'+nf(c2.semis)+'</td>'
+         + '<td><select onchange="smSet('+i+',\'motte\',this.value,1)">'+optMotte(mo)+'</select></td>'
+         + '<td><select onchange="smSet('+i+',\'plateau\',this.value,1)">'+optPlateau(pl)+'</select></td>'
+         + '<td class="b">'+nf(n)+'</td></tr>';
+      });
+      h+='</tbody></table></div>';
+    }
+
+    // Calcul libre, hors série
     var semis=(SM.override===null||SM.override==='')?totaux().semis:(Number(SM.override)||0);
     var cp=cap(SM.plateau,SM.motte), nb=cp>0?Math.ceil(semis/cp):0, reste=nb>0?semis-(nb-1)*cp:0;
-    var h='<div class="sm-card"><h3>Calcul rapide</h3><div class="sm-g2">'
+    h+='<div class="sm-card"><h3>Calcul libre</h3><div class="sm-g2">'
      + '<div><span class="sm-lab">Type de motte</span><select onchange="smGlob(\'motte\',this.value)">'+optMotte(SM.motte)+'</select></div>'
      + '<div><span class="sm-lab">Type de plateau</span><select onchange="smGlob(\'plateau\',this.value)">'+optPlateau(SM.plateau)+'</select></div></div>'
      + '<div style="margin-top:9px"><span class="sm-lab">Nombre de semis</span>'
      + '<input type="number" min="0" step="1" inputmode="numeric" value="'+semis+'" oninput="smGlob(\'override\',this.value)"></div>'
      + '<button class="sm-btn" style="margin-top:9px" onclick="smGlob(\'override\',null)">↻ Reprendre le total de la série</button>'
      + '<div class="sm-res"><b>'+nf(nb)+'</b><span>plateaux</span><span class="v">'+(cp?cp+' alvéoles / plateau':'capacité non définie')+'</span></div>';
-    if(cp>0&&cp<=400){ var c=cols(cp), cells='';
-      for(var i=0;i<cp;i++)cells+='<div class="sm-cell'+(i<reste?' f':'')+'"></div>';
+    if(cp>0&&cp<=400){
+      var c=cols(cp), cells='';
+      for(var i2=0;i2<cp;i2++)cells+='<div class="sm-cell'+(i2<reste?' f':'')+'"></div>';
       h+='<div class="sm-tray" style="grid-template-columns:repeat('+c+',1fr)">'+cells+'</div>'
-       + '<p class="sm-cap">'+(nb>0?'Dernier plateau : '+nf(reste)+' / '+nf(cp)+' alvéoles remplies':'—')+'</p>'; }
-    h+='</div><div class="sm-card sm-tab"><h3>Détail par variété</h3>';
-    var L=LG();
-    if(!L.length){ h+='<p class="sm-empty">Rien à répartir.</p>'; }
-    else{
-      h+='<table><thead><tr><th>Variété</th><th>Semis</th><th>Motte</th><th>Plateau</th><th>Pl.</th></tr></thead><tbody>';
-      var tot=0;
-      L.forEach(function(l,i){ var c2=calc(l), mo=l.motte||SM.motte, pl=l.plateau||SM.plateau;
-        var cc=cap(pl,mo), n=cc>0?Math.ceil(c2.semis/cc):0; tot+=n;
-        h+='<tr><td>'+(l.variete||'—')+(l.fait?' ✓':'')+'</td><td>'+nf(c2.semis)+'</td>'
-         + '<td><select onchange="smSet('+i+',\'motte\',this.value,1)">'+optMotte(mo)+'</select></td>'
-         + '<td><select onchange="smSet('+i+',\'plateau\',this.value,1)">'+optPlateau(pl)+'</select></td>'
-         + '<td class="b">'+nf(n)+'</td></tr>'; });
-      h+='<tr><td colspan="4"><b>Total plateaux</b></td><td class="b">'+nf(tot)+'</td></tr></tbody></table>'
-       + '<p class="sm-note">Un plateau n\'est pas partagé entre deux variétés : ce total est plus haut que le calcul rapide, et c\'est celui qui correspond au semis réel.</p>';
+       + '<p class="sm-cap">'+(nb>0?'Dernier plateau : '+nf(reste)+' / '+nf(cp)+' alvéoles remplies':'—')+'</p>';
     }
-    return h+'</div>';
+    h+='<p class="sm-note">Ces réglages définissent aussi le type de motte et de plateau par défaut des nouvelles lignes.</p></div>';
+    return h;
   }
 
   // ── RÉGLAGES ──────────────────────────────────────────────────────
@@ -869,7 +948,10 @@ window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
     if(el.value==='__autre'){ var v=prompt('Nom de la variété :',l.variete||'');
       l.variete=v?v.trim():(l.variete||''); }
     else l.variete=el.value;
-    if(l.variete&&SM.ecartMemo[l.variete]!=null) l.ecart=SM.ecartMemo[l.variete];
+    if(l.variete){
+      if(SM.ecartMemo[l.variete]!=null) l.ecart=SM.ecartMemo[l.variete];
+      else if(l.ecart) SM.ecartMemo[l.variete]=Number(l.ecart)||l.ecart;
+    }
     smSave(); renderMain();
   };
   window.smSet=function(i,f,v,redraw){
@@ -902,6 +984,7 @@ window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
     smSave();
     if(f==='motte'||f==='plateau')renderMain();
   };
+  window.smMelange=function(v){ SM.melange=!!v; smSave(); renderMain(); };
   window.smCap=function(k,m,v){ SM.caps[k][m]=Math.max(1,Number(v)||1); smSave(); };
   window.smMemoDel=function(n){ delete SM.ecartMemo[n]; smSave(); renderMain(); };
   window.smEcarts=function(v){
