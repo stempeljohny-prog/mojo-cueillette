@@ -561,10 +561,238 @@ function renderTabs(){
   document.getElementById('tabBar').innerHTML=[
     {id:'harvest',label:'🌿 Cueillette'},{id:'commandes',label:'📋 Commandes'},{id:'sechees',label:'🥀 Séchées'},{id:'mix',label:'🎯 Mix'},{id:'dispo',label:'📦 Dispo'},{id:'summary',label:'📋 Récap'},
     {id:'catalog',label:'✏️ Fleurs'},{id:'florists',label:'🏪 Fleuristes'},
+    {id:'semis',label:'🌱 Semis'},
     {id:'backup',label:'💾 Sauvegarde'},
   ].map(t=>`<button class="tab ${state.activeTab===t.id?'active':''}" onclick="window._tab('${t.id}')">${t.label}</button>`).join('');
 }
 window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
+// ═══ MODULE SEMIS ═══════════════════════════════════════════════════
+(function(){
+  var DEF={sub:'plants',marge:40,largeur:0.80,ecarts:[15,23,33],motte:'petite',plateau:'botanic',override:null,lignes:[],
+    caps:{ikea:{nom:'Gris Ikea',petite:70,grosse:40},botanic:{nom:'Botanic',petite:140,grosse:70},noir:{nom:'Noir',petite:140,grosse:70}}};
+  var SM;
+  try{ SM=Object.assign({},DEF,JSON.parse(localStorage.getItem('mojo_semis')||'{}')); }catch(e){ SM=Object.assign({},DEF); }
+  SM.caps=Object.assign({},DEF.caps,SM.caps||{});
+  function smSave(){ try{ localStorage.setItem('mojo_semis',JSON.stringify(SM)); }catch(e){} }
+
+  function nf(n,d){ d=d||0; if(!isFinite(n))n=0;
+    return n.toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+
+  function calc(l){
+    var e=(Number(l.ecart)||0)/100, s=Number(l.surface)||0;
+    var m=Number(l.marge); if(!isFinite(m))m=SM.marge;
+    var dens=e>0?1/(e*e):0, plants=Math.round(s*dens);
+    var semis=Math.ceil(plants*(1+m/100));
+    var levee=m<100?Math.ceil(plants/(1-m/100)):0;
+    var planche=0, L=Number(SM.largeur)||0.80;
+    if(e>0&&s>0){ var rangs=Math.max(1,Math.floor(L/e)); var parRang=Math.floor((s/L)/e);
+      planche=Math.ceil(rangs*parRang*(1+m/100)); }
+    return {dens:dens,plants:plants,semis:semis,levee:levee,planche:planche,marge:m};
+  }
+  function totaux(){ var t={plants:0,semis:0,levee:0,planche:0};
+    SM.lignes.forEach(function(l){var c=calc(l);t.plants+=c.plants;t.semis+=c.semis;t.levee+=c.levee;t.planche+=c.planche;});
+    return t; }
+  function cap(p,m){ var x=SM.caps[p]; return x?(Number(x[m])||0):0; }
+  function cols(n){ var b=10,d0=1e9; for(var d=2;d<=n;d++){ if(n%d)continue;
+    var diff=Math.abs(d/(n/d)-2); if(diff<d0){d0=diff;b=d;} } return b; }
+
+  function ensureStyle(){
+    if(document.getElementById('semisStyle'))return;
+    var s=document.createElement('style'); s.id='semisStyle';
+    s.textContent=
+    '.sm-sub{display:flex;gap:0;margin-bottom:14px;background:var(--surface2);border-radius:10px;padding:3px}'+
+    '.sm-sub button{flex:1;padding:7px;border:none;background:transparent;border-radius:8px;font-family:inherit;font-size:.8rem;font-weight:500;cursor:pointer;color:var(--text2)}'+
+    '.sm-sub button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}'+
+    '.sm-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}'+
+    '.sm-card h3{font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:10px}'+
+    '.sm-lab{display:block;font-size:.68rem;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);margin-bottom:3px}'+
+    '.sm-card input,.sm-card select{width:100%;font-family:inherit;font-size:.92rem;color:var(--text);background:var(--surface2);border:1.5px solid var(--border);border-radius:9px;padding:8px 9px}'+
+    '.sm-card input:focus,.sm-card select:focus{outline:none;border-color:var(--accent)}'+
+    '.sm-g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}'+
+    '.sm-g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}'+
+    '.sm-head{display:flex;gap:8px;align-items:flex-end;margin-bottom:9px}'+
+    '.sm-head>div{flex:1;min-width:0}'+
+    '.sm-del{flex:0 0 auto;width:36px;height:36px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface2);color:var(--danger);font-size:1rem;cursor:pointer}'+
+    '.sm-res{margin-top:11px;padding-top:9px;border-top:1px dashed var(--border);display:flex;flex-wrap:wrap;gap:3px 14px;align-items:baseline;font-size:.76rem;color:var(--text2)}'+
+    '.sm-res b{font-family:"DM Serif Display",serif;font-size:1.45rem;font-weight:400;color:var(--accent)}'+
+    '.sm-res .v{color:var(--text);font-weight:500}'+
+    '.sm-btn{width:100%;padding:12px;border-radius:var(--radius);border:1.5px solid var(--border);background:var(--surface);color:var(--accent);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;margin-bottom:10px}'+
+    '.sm-tot{background:var(--text);color:#fff;border-radius:var(--radius);padding:16px;margin-bottom:10px}'+
+    '.sm-tot h3{color:rgba(255,255,255,.5);margin-bottom:10px}'+
+    '.sm-tl{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.12)}'+
+    '.sm-tl:last-child{border:0}'+
+    '.sm-tl span{font-size:.78rem;color:rgba(255,255,255,.6)}'+
+    '.sm-tl strong{font-family:"DM Serif Display",serif;font-size:1.5rem;font-weight:400}'+
+    '.sm-tl.s strong{font-size:1rem;font-family:inherit;font-weight:500;color:rgba(255,255,255,.8)}'+
+    '.sm-tray{display:grid;gap:2px;background:var(--border);padding:3px;border-radius:8px;margin-top:12px}'+
+    '.sm-cell{aspect-ratio:1;background:var(--surface2);border-radius:2px}'+
+    '.sm-cell.f{background:var(--accent2)}'+
+    '.sm-cap{font-size:.76rem;color:var(--text2);text-align:center;margin-top:8px}'+
+    '.sm-tab table{width:100%;border-collapse:collapse;font-size:.84rem}'+
+    '.sm-tab th{font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);font-weight:600;text-align:right;padding-bottom:7px;border-bottom:1.5px solid var(--border)}'+
+    '.sm-tab th:first-child{text-align:left}'+
+    '.sm-tab td{padding:8px 0;border-bottom:1px solid var(--border);text-align:right}'+
+    '.sm-tab td:first-child{text-align:left}'+
+    '.sm-tab td select{padding:4px 5px;font-size:.78rem;width:auto;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);font-family:inherit;color:var(--text)}'+
+    '.sm-tab td.b{font-weight:700;color:var(--accent)}'+
+    '.sm-note{font-size:.78rem;color:var(--text2);line-height:1.55;margin-top:10px}'+
+    '.sm-note b{color:var(--text)}'+
+    '.sm-empty{text-align:center;color:var(--text2);padding:20px 0;font-size:.88rem}';
+    document.head.appendChild(s);
+  }
+
+  function optEcart(sel){ var h='', l=SM.ecarts.slice();
+    if(sel&&l.indexOf(Number(sel))===-1)l.push(Number(sel));
+    l.forEach(function(v){h+='<option value="'+v+'"'+(Number(sel)===Number(v)?' selected':'')+'>'+v+' cm</option>';});
+    return h; }
+  function optMotte(s){ return '<option value="petite"'+(s==='petite'?' selected':'')+'>Petite</option>'+
+    '<option value="grosse"'+(s==='grosse'?' selected':'')+'>Grosse</option>'; }
+  function optPlateau(s){ var h=''; for(var k in SM.caps)
+    h+='<option value="'+k+'"'+(s===k?' selected':'')+'>'+SM.caps[k].nom+'</option>'; return h; }
+  function optVar(sel){
+    var h='<option value="">— choisir —</option>', found=false;
+    var list=[].concat(state.flowers||[]).sort(function(a,b){return a.name.localeCompare(b.name,'fr');});
+    list.forEach(function(f){ var n=f.name||''; if(n===sel)found=true;
+      h+='<option value="'+n.replace(/"/g,'&quot;')+'"'+(n===sel?' selected':'')+'>'+n+'</option>'; });
+    if(sel&&!found)h+='<option value="'+String(sel).replace(/"/g,'&quot;')+'" selected>'+sel+'</option>';
+    return h+'<option value="__autre">✎ Autre…</option>';
+  }
+  function resHTML(c){ return '<b>'+nf(c.semis)+'</b><span>semis</span><span class="v">'+nf(c.plants)+
+    ' plants</span><span>'+nf(c.dens,1)+' pl/m²</span>'; }
+
+  function viewPlants(){
+    var h='';
+    if(!SM.lignes.length){ h+='<div class="sm-card"><p class="sm-empty">Aucune variété. Ajoute une ligne pour démarrer.</p></div>'; }
+    else SM.lignes.forEach(function(l,i){ var c=calc(l);
+      h+='<div class="sm-card"><div class="sm-head"><div><span class="sm-lab">Variété</span>'
+      + '<select onchange="smVar('+i+',this)">'+optVar(l.variete)+'</select></div>'
+      + '<button class="sm-del" onclick="smDel('+i+')">✕</button></div><div class="sm-g3">'
+      + '<div><span class="sm-lab">Surface m²</span><input type="number" min="0" step="0.5" inputmode="decimal" value="'+(l.surface||'')+'" oninput="smSet('+i+',\'surface\',this.value)"></div>'
+      + '<div><span class="sm-lab">Écartement</span><select onchange="smSet('+i+',\'ecart\',this.value,1)">'+optEcart(l.ecart)+'</select></div>'
+      + '<div><span class="sm-lab">Marge %</span><input type="number" min="0" max="200" step="5" inputmode="numeric" value="'+c.marge+'" oninput="smSet('+i+',\'marge\',this.value)"></div>'
+      + '</div><div class="sm-res" id="smRes'+i+'">'+resHTML(c)+'</div></div>';
+    });
+    h+='<button class="sm-btn" onclick="smAdd()">+ Ajouter une variété</button>';
+    var t=totaux();
+    h+='<div class="sm-tot"><h3>Total à semer</h3>'
+     + '<div class="sm-tl"><span>Plants en place</span><strong>'+nf(t.plants)+'</strong></div>'
+     + '<div class="sm-tl"><span>Semis à faire</span><strong>'+nf(t.semis)+'</strong></div>'
+     + '<div class="sm-tl s"><span>Variante « taux de levée »</span><strong>'+nf(t.levee)+'</strong></div>'
+     + '<div class="sm-tl s"><span>Ajusté largeur de planche</span><strong>'+nf(t.planche)+'</strong></div></div>'
+     + '<p class="sm-note"><b>Surface nette de planche</b>, allées exclues. Surface ÷ écartement² surestime toujours un peu : sur une planche de largeur finie tu perds les rangs incomplets — d\'où la ligne « ajusté », 5 à 15 % plus basse en général.</p>'
+     + '<p class="sm-note"><b>Marge vs taux de levée.</b> +40 % de marge = ×1,40. 40 % de pertes = ×1,67. 19 % d\'écart sur la commande de graines.</p>';
+    return h;
+  }
+
+  function viewPlateaux(){
+    var semis=(SM.override===null||SM.override==='')?totaux().semis:(Number(SM.override)||0);
+    var cp=cap(SM.plateau,SM.motte), nb=cp>0?Math.ceil(semis/cp):0, reste=nb>0?semis-(nb-1)*cp:0;
+    var h='<div class="sm-card"><h3>Calcul rapide</h3><div class="sm-g2">'
+     + '<div><span class="sm-lab">Type de motte</span><select onchange="smGlob(\'motte\',this.value)">'+optMotte(SM.motte)+'</select></div>'
+     + '<div><span class="sm-lab">Type de plateau</span><select onchange="smGlob(\'plateau\',this.value)">'+optPlateau(SM.plateau)+'</select></div></div>'
+     + '<div style="margin-top:9px"><span class="sm-lab">Nombre de semis</span>'
+     + '<input type="number" min="0" step="1" inputmode="numeric" value="'+semis+'" oninput="smGlob(\'override\',this.value)"></div>'
+     + '<button class="sm-btn" style="margin-top:9px" onclick="smGlob(\'override\',null)">↻ Reprendre le total de Plants</button>'
+     + '<div class="sm-res"><b>'+nf(nb)+'</b><span>plateaux</span><span class="v">'+(cp?cp+' alvéoles / plateau':'capacité non définie')+'</span></div>';
+    if(cp>0&&cp<=400){ var c=cols(cp), cells='';
+      for(var i=0;i<cp;i++)cells+='<div class="sm-cell'+(i<reste?' f':'')+'"></div>';
+      h+='<div class="sm-tray" style="grid-template-columns:repeat('+c+',1fr)">'+cells+'</div>'
+       + '<p class="sm-cap">'+(nb>0?'Dernier plateau : '+nf(reste)+' / '+nf(cp)+' alvéoles remplies':'—')+'</p>'; }
+    h+='</div><div class="sm-card sm-tab"><h3>Détail par variété</h3>';
+    if(!SM.lignes.length){ h+='<p class="sm-empty">Rien à répartir.</p>'; }
+    else{
+      h+='<table><thead><tr><th>Variété</th><th>Semis</th><th>Motte</th><th>Plateau</th><th>Pl.</th></tr></thead><tbody>';
+      var tot=0;
+      SM.lignes.forEach(function(l,i){ var c2=calc(l), mo=l.motte||SM.motte, pl=l.plateau||SM.plateau;
+        var cc=cap(pl,mo), n=cc>0?Math.ceil(c2.semis/cc):0; tot+=n;
+        h+='<tr><td>'+(l.variete||'—')+'</td><td>'+nf(c2.semis)+'</td>'
+         + '<td><select onchange="smSet('+i+',\'motte\',this.value,1)">'+optMotte(mo)+'</select></td>'
+         + '<td><select onchange="smSet('+i+',\'plateau\',this.value,1)">'+optPlateau(pl)+'</select></td>'
+         + '<td class="b">'+nf(n)+'</td></tr>'; });
+      h+='<tr><td colspan="4"><b>Total plateaux</b></td><td class="b">'+nf(tot)+'</td></tr></tbody></table>'
+       + '<p class="sm-note">Un plateau n\'est pas partagé entre deux variétés : ce total est plus haut que le calcul rapide, et c\'est celui qui correspond au semis réel.</p>';
+    }
+    return h+'</div>';
+  }
+
+  function viewReglages(){
+    var h='<div class="sm-card sm-tab"><h3>Capacité des plateaux — alvéoles</h3>'
+     + '<table><thead><tr><th>Plateau</th><th>Petites</th><th>Grosses</th></tr></thead><tbody>';
+    for(var k in SM.caps){ var p=SM.caps[k];
+      h+='<tr><td>'+p.nom+'</td>'
+       + '<td><input type="number" min="1" inputmode="numeric" value="'+p.petite+'" style="width:74px;display:inline-block;font-family:inherit;border:1.5px solid var(--border);background:var(--surface2);border-radius:7px;padding:5px;color:var(--text);text-align:right" oninput="smCap(\''+k+'\',\'petite\',this.value)"></td>'
+       + '<td><input type="number" min="1" inputmode="numeric" value="'+p.grosse+'" style="width:74px;display:inline-block;font-family:inherit;border:1.5px solid var(--border);background:var(--surface2);border-radius:7px;padding:5px;color:var(--text);text-align:right" oninput="smCap(\''+k+'\',\'grosse\',this.value)"></td></tr>'; }
+    h+='</tbody></table><p class="sm-note">À vérifier sur un plateau réel : compte une rangée × une colonne. C\'est le paramètre le plus sensible du calcul.</p></div>';
+    h+='<div class="sm-card"><h3>Valeurs par défaut</h3><div class="sm-g2">'
+     + '<div><span class="sm-lab">Marge % défaut</span><input type="number" min="0" max="200" step="5" inputmode="numeric" value="'+SM.marge+'" oninput="smGlob(\'marge\',this.value)"></div>'
+     + '<div><span class="sm-lab">Largeur planche (m)</span><input type="number" min="0.2" max="3" step="0.05" inputmode="decimal" value="'+SM.largeur+'" oninput="smGlob(\'largeur\',this.value)"></div></div>'
+     + '<div style="margin-top:9px"><span class="sm-lab">Écartements proposés (cm)</span>'
+     + '<input type="text" value="'+SM.ecarts.join(', ')+'" onchange="smEcarts(this.value)"></div>'
+     + '<p class="sm-note">La liste des variétés vient directement de l\'onglet <b>✏️ Fleurs</b>. « Autre… » permet un nom hors catalogue.</p></div>';
+    return h;
+  }
+
+  function buildSemis(){
+    ensureStyle();
+    var lab={plants:'Plants',plateaux:'Plateaux',reglages:'Réglages'};
+    var h='<div class="sm-sub">'+['plants','plateaux','reglages'].map(function(k){
+      return '<button class="'+(SM.sub===k?'on':'')+'" onclick="smSub(\''+k+'\')">'+lab[k]+'</button>'; }).join('')+'</div>';
+    if(SM.sub==='plateaux')h+=viewPlateaux();
+    else if(SM.sub==='reglages')h+=viewReglages();
+    else h+=viewPlants();
+    return h;
+  }
+
+  // handlers
+  window.smSub=function(k){ SM.sub=k; smSave(); renderMain(); };
+  window.smAdd=function(){ SM.lignes.push({variete:'',surface:'',ecart:SM.ecarts[0],marge:SM.marge,motte:SM.motte,plateau:SM.plateau}); smSave(); renderMain(); };
+  window.smDel=function(i){ SM.lignes.splice(i,1); smSave(); renderMain(); };
+  window.smVar=function(i,el){
+    if(el.value==='__autre'){ var v=prompt('Nom de la variété :',SM.lignes[i].variete||'');
+      SM.lignes[i].variete=v?v.trim():(SM.lignes[i].variete||''); }
+    else SM.lignes[i].variete=el.value;
+    smSave(); renderMain();
+  };
+  window.smSet=function(i,f,v,redraw){
+    SM.lignes[i][f]=v; smSave();
+    if(redraw){ renderMain(); return; }
+    var el=document.getElementById('smRes'+i);
+    if(el)el.innerHTML=resHTML(calc(SM.lignes[i]));
+    var t=totaux(), tl=document.querySelectorAll('.sm-tot .sm-tl strong');
+    if(tl.length===4){ tl[0].textContent=nf(t.plants); tl[1].textContent=nf(t.semis);
+      tl[2].textContent=nf(t.levee); tl[3].textContent=nf(t.planche); }
+  };
+  window.smGlob=function(f,v){
+    if(f==='override'){ SM.override=(v===null||v==='')?null:v; smSave();
+      if(v===null)renderMain();
+      else{ var s=Number(v)||0, cp=cap(SM.plateau,SM.motte), nb=cp>0?Math.ceil(s/cp):0;
+            var b=document.querySelector('.sm-res b'); if(b)b.textContent=nf(nb); }
+      return; }
+    if(f==='marge')SM.marge=Number(v)||0;
+    else if(f==='largeur')SM.largeur=Number(v)||0.8;
+    else SM[f]=v;
+    smSave();
+    if(f==='motte'||f==='plateau')renderMain();
+  };
+  window.smCap=function(k,m,v){ SM.caps[k][m]=Math.max(1,Number(v)||1); smSave(); };
+  window.smEcarts=function(v){
+    var a=v.split(',').map(function(x){return parseFloat(String(x).replace(',','.'));})
+          .filter(function(x){return isFinite(x)&&x>0;});
+    if(a.length)SM.ecarts=a; smSave(); renderMain();
+  };
+
+  // greffe sur renderMain (binding de déclaration de fonction, réassignable)
+  var _rmOld=renderMain;
+  renderMain=function(){
+    if(state.activeTab==='semis'){
+      renderTabs();
+      document.getElementById('mainContent').innerHTML=buildSemis();
+      return;
+    }
+    return _rmOld.apply(this,arguments);
+  };
+})();
+// ═══ FIN MODULE SEMIS ════════════════════════════════════════════════
 
 // ── DATE TABS ─────────────────────────────────────────────────────────
 function formatDateKey(dk){const[y,m,d]=dk.split('-');return dk===todayKey()?'Aujourd\'hui':new Date(y,m-1,d).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});}
@@ -1695,233 +1923,5 @@ function renderMain(){
 }
 window.renderMain=renderMain;
 </script>
-// ═══ MODULE SEMIS ═══════════════════════════════════════════════════
-(function(){
-  var DEF={sub:'plants',marge:40,largeur:0.80,ecarts:[15,23,33],motte:'petite',plateau:'botanic',override:null,lignes:[],
-    caps:{ikea:{nom:'Gris Ikea',petite:70,grosse:40},botanic:{nom:'Botanic',petite:140,grosse:70},noir:{nom:'Noir',petite:140,grosse:70}}};
-  var SM;
-  try{ SM=Object.assign({},DEF,JSON.parse(localStorage.getItem('mojo_semis')||'{}')); }catch(e){ SM=Object.assign({},DEF); }
-  SM.caps=Object.assign({},DEF.caps,SM.caps||{});
-  function smSave(){ try{ localStorage.setItem('mojo_semis',JSON.stringify(SM)); }catch(e){} }
-
-  function nf(n,d){ d=d||0; if(!isFinite(n))n=0;
-    return n.toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d}); }
-
-  function calc(l){
-    var e=(Number(l.ecart)||0)/100, s=Number(l.surface)||0;
-    var m=Number(l.marge); if(!isFinite(m))m=SM.marge;
-    var dens=e>0?1/(e*e):0, plants=Math.round(s*dens);
-    var semis=Math.ceil(plants*(1+m/100));
-    var levee=m<100?Math.ceil(plants/(1-m/100)):0;
-    var planche=0, L=Number(SM.largeur)||0.80;
-    if(e>0&&s>0){ var rangs=Math.max(1,Math.floor(L/e)); var parRang=Math.floor((s/L)/e);
-      planche=Math.ceil(rangs*parRang*(1+m/100)); }
-    return {dens:dens,plants:plants,semis:semis,levee:levee,planche:planche,marge:m};
-  }
-  function totaux(){ var t={plants:0,semis:0,levee:0,planche:0};
-    SM.lignes.forEach(function(l){var c=calc(l);t.plants+=c.plants;t.semis+=c.semis;t.levee+=c.levee;t.planche+=c.planche;});
-    return t; }
-  function cap(p,m){ var x=SM.caps[p]; return x?(Number(x[m])||0):0; }
-  function cols(n){ var b=10,d0=1e9; for(var d=2;d<=n;d++){ if(n%d)continue;
-    var diff=Math.abs(d/(n/d)-2); if(diff<d0){d0=diff;b=d;} } return b; }
-
-  function ensureStyle(){
-    if(document.getElementById('semisStyle'))return;
-    var s=document.createElement('style'); s.id='semisStyle';
-    s.textContent=
-    '.sm-sub{display:flex;gap:0;margin-bottom:14px;background:var(--surface2);border-radius:10px;padding:3px}'+
-    '.sm-sub button{flex:1;padding:7px;border:none;background:transparent;border-radius:8px;font-family:inherit;font-size:.8rem;font-weight:500;cursor:pointer;color:var(--text2)}'+
-    '.sm-sub button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}'+
-    '.sm-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}'+
-    '.sm-card h3{font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:10px}'+
-    '.sm-lab{display:block;font-size:.68rem;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);margin-bottom:3px}'+
-    '.sm-card input,.sm-card select{width:100%;font-family:inherit;font-size:.92rem;color:var(--text);background:var(--surface2);border:1.5px solid var(--border);border-radius:9px;padding:8px 9px}'+
-    '.sm-card input:focus,.sm-card select:focus{outline:none;border-color:var(--accent)}'+
-    '.sm-g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}'+
-    '.sm-g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}'+
-    '.sm-head{display:flex;gap:8px;align-items:flex-end;margin-bottom:9px}'+
-    '.sm-head>div{flex:1;min-width:0}'+
-    '.sm-del{flex:0 0 auto;width:36px;height:36px;border-radius:9px;border:1.5px solid var(--border);background:var(--surface2);color:var(--danger);font-size:1rem;cursor:pointer}'+
-    '.sm-res{margin-top:11px;padding-top:9px;border-top:1px dashed var(--border);display:flex;flex-wrap:wrap;gap:3px 14px;align-items:baseline;font-size:.76rem;color:var(--text2)}'+
-    '.sm-res b{font-family:"DM Serif Display",serif;font-size:1.45rem;font-weight:400;color:var(--accent)}'+
-    '.sm-res .v{color:var(--text);font-weight:500}'+
-    '.sm-btn{width:100%;padding:12px;border-radius:var(--radius);border:1.5px solid var(--border);background:var(--surface);color:var(--accent);font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;margin-bottom:10px}'+
-    '.sm-tot{background:var(--text);color:#fff;border-radius:var(--radius);padding:16px;margin-bottom:10px}'+
-    '.sm-tot h3{color:rgba(255,255,255,.5);margin-bottom:10px}'+
-    '.sm-tl{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.12)}'+
-    '.sm-tl:last-child{border:0}'+
-    '.sm-tl span{font-size:.78rem;color:rgba(255,255,255,.6)}'+
-    '.sm-tl strong{font-family:"DM Serif Display",serif;font-size:1.5rem;font-weight:400}'+
-    '.sm-tl.s strong{font-size:1rem;font-family:inherit;font-weight:500;color:rgba(255,255,255,.8)}'+
-    '.sm-tray{display:grid;gap:2px;background:var(--border);padding:3px;border-radius:8px;margin-top:12px}'+
-    '.sm-cell{aspect-ratio:1;background:var(--surface2);border-radius:2px}'+
-    '.sm-cell.f{background:var(--accent2)}'+
-    '.sm-cap{font-size:.76rem;color:var(--text2);text-align:center;margin-top:8px}'+
-    '.sm-tab table{width:100%;border-collapse:collapse;font-size:.84rem}'+
-    '.sm-tab th{font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);font-weight:600;text-align:right;padding-bottom:7px;border-bottom:1.5px solid var(--border)}'+
-    '.sm-tab th:first-child{text-align:left}'+
-    '.sm-tab td{padding:8px 0;border-bottom:1px solid var(--border);text-align:right}'+
-    '.sm-tab td:first-child{text-align:left}'+
-    '.sm-tab td select{padding:4px 5px;font-size:.78rem;width:auto;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);font-family:inherit;color:var(--text)}'+
-    '.sm-tab td.b{font-weight:700;color:var(--accent)}'+
-    '.sm-note{font-size:.78rem;color:var(--text2);line-height:1.55;margin-top:10px}'+
-    '.sm-note b{color:var(--text)}'+
-    '.sm-empty{text-align:center;color:var(--text2);padding:20px 0;font-size:.88rem}';
-    document.head.appendChild(s);
-  }
-
-  function optEcart(sel){ var h='', l=SM.ecarts.slice();
-    if(sel&&l.indexOf(Number(sel))===-1)l.push(Number(sel));
-    l.forEach(function(v){h+='<option value="'+v+'"'+(Number(sel)===Number(v)?' selected':'')+'>'+v+' cm</option>';});
-    return h; }
-  function optMotte(s){ return '<option value="petite"'+(s==='petite'?' selected':'')+'>Petite</option>'+
-    '<option value="grosse"'+(s==='grosse'?' selected':'')+'>Grosse</option>'; }
-  function optPlateau(s){ var h=''; for(var k in SM.caps)
-    h+='<option value="'+k+'"'+(s===k?' selected':'')+'>'+SM.caps[k].nom+'</option>'; return h; }
-  function optVar(sel){
-    var h='<option value="">— choisir —</option>', found=false;
-    var list=[].concat(state.flowers||[]).sort(function(a,b){return a.name.localeCompare(b.name,'fr');});
-    list.forEach(function(f){ var n=f.name||''; if(n===sel)found=true;
-      h+='<option value="'+n.replace(/"/g,'&quot;')+'"'+(n===sel?' selected':'')+'>'+n+'</option>'; });
-    if(sel&&!found)h+='<option value="'+String(sel).replace(/"/g,'&quot;')+'" selected>'+sel+'</option>';
-    return h+'<option value="__autre">✎ Autre…</option>';
-  }
-  function resHTML(c){ return '<b>'+nf(c.semis)+'</b><span>semis</span><span class="v">'+nf(c.plants)+
-    ' plants</span><span>'+nf(c.dens,1)+' pl/m²</span>'; }
-
-  function viewPlants(){
-    var h='';
-    if(!SM.lignes.length){ h+='<div class="sm-card"><p class="sm-empty">Aucune variété. Ajoute une ligne pour démarrer.</p></div>'; }
-    else SM.lignes.forEach(function(l,i){ var c=calc(l);
-      h+='<div class="sm-card"><div class="sm-head"><div><span class="sm-lab">Variété</span>'
-      + '<select onchange="smVar('+i+',this)">'+optVar(l.variete)+'</select></div>'
-      + '<button class="sm-del" onclick="smDel('+i+')">✕</button></div><div class="sm-g3">'
-      + '<div><span class="sm-lab">Surface m²</span><input type="number" min="0" step="0.5" inputmode="decimal" value="'+(l.surface||'')+'" oninput="smSet('+i+',\'surface\',this.value)"></div>'
-      + '<div><span class="sm-lab">Écartement</span><select onchange="smSet('+i+',\'ecart\',this.value,1)">'+optEcart(l.ecart)+'</select></div>'
-      + '<div><span class="sm-lab">Marge %</span><input type="number" min="0" max="200" step="5" inputmode="numeric" value="'+c.marge+'" oninput="smSet('+i+',\'marge\',this.value)"></div>'
-      + '</div><div class="sm-res" id="smRes'+i+'">'+resHTML(c)+'</div></div>';
-    });
-    h+='<button class="sm-btn" onclick="smAdd()">+ Ajouter une variété</button>';
-    var t=totaux();
-    h+='<div class="sm-tot"><h3>Total à semer</h3>'
-     + '<div class="sm-tl"><span>Plants en place</span><strong>'+nf(t.plants)+'</strong></div>'
-     + '<div class="sm-tl"><span>Semis à faire</span><strong>'+nf(t.semis)+'</strong></div>'
-     + '<div class="sm-tl s"><span>Variante « taux de levée »</span><strong>'+nf(t.levee)+'</strong></div>'
-     + '<div class="sm-tl s"><span>Ajusté largeur de planche</span><strong>'+nf(t.planche)+'</strong></div></div>'
-     + '<p class="sm-note"><b>Surface nette de planche</b>, allées exclues. Surface ÷ écartement² surestime toujours un peu : sur une planche de largeur finie tu perds les rangs incomplets — d\'où la ligne « ajusté », 5 à 15 % plus basse en général.</p>'
-     + '<p class="sm-note"><b>Marge vs taux de levée.</b> +40 % de marge = ×1,40. 40 % de pertes = ×1,67. 19 % d\'écart sur la commande de graines.</p>';
-    return h;
-  }
-
-  function viewPlateaux(){
-    var semis=(SM.override===null||SM.override==='')?totaux().semis:(Number(SM.override)||0);
-    var cp=cap(SM.plateau,SM.motte), nb=cp>0?Math.ceil(semis/cp):0, reste=nb>0?semis-(nb-1)*cp:0;
-    var h='<div class="sm-card"><h3>Calcul rapide</h3><div class="sm-g2">'
-     + '<div><span class="sm-lab">Type de motte</span><select onchange="smGlob(\'motte\',this.value)">'+optMotte(SM.motte)+'</select></div>'
-     + '<div><span class="sm-lab">Type de plateau</span><select onchange="smGlob(\'plateau\',this.value)">'+optPlateau(SM.plateau)+'</select></div></div>'
-     + '<div style="margin-top:9px"><span class="sm-lab">Nombre de semis</span>'
-     + '<input type="number" min="0" step="1" inputmode="numeric" value="'+semis+'" oninput="smGlob(\'override\',this.value)"></div>'
-     + '<button class="sm-btn" style="margin-top:9px" onclick="smGlob(\'override\',null)">↻ Reprendre le total de Plants</button>'
-     + '<div class="sm-res"><b>'+nf(nb)+'</b><span>plateaux</span><span class="v">'+(cp?cp+' alvéoles / plateau':'capacité non définie')+'</span></div>';
-    if(cp>0&&cp<=400){ var c=cols(cp), cells='';
-      for(var i=0;i<cp;i++)cells+='<div class="sm-cell'+(i<reste?' f':'')+'"></div>';
-      h+='<div class="sm-tray" style="grid-template-columns:repeat('+c+',1fr)">'+cells+'</div>'
-       + '<p class="sm-cap">'+(nb>0?'Dernier plateau : '+nf(reste)+' / '+nf(cp)+' alvéoles remplies':'—')+'</p>'; }
-    h+='</div><div class="sm-card sm-tab"><h3>Détail par variété</h3>';
-    if(!SM.lignes.length){ h+='<p class="sm-empty">Rien à répartir.</p>'; }
-    else{
-      h+='<table><thead><tr><th>Variété</th><th>Semis</th><th>Motte</th><th>Plateau</th><th>Pl.</th></tr></thead><tbody>';
-      var tot=0;
-      SM.lignes.forEach(function(l,i){ var c2=calc(l), mo=l.motte||SM.motte, pl=l.plateau||SM.plateau;
-        var cc=cap(pl,mo), n=cc>0?Math.ceil(c2.semis/cc):0; tot+=n;
-        h+='<tr><td>'+(l.variete||'—')+'</td><td>'+nf(c2.semis)+'</td>'
-         + '<td><select onchange="smSet('+i+',\'motte\',this.value,1)">'+optMotte(mo)+'</select></td>'
-         + '<td><select onchange="smSet('+i+',\'plateau\',this.value,1)">'+optPlateau(pl)+'</select></td>'
-         + '<td class="b">'+nf(n)+'</td></tr>'; });
-      h+='<tr><td colspan="4"><b>Total plateaux</b></td><td class="b">'+nf(tot)+'</td></tr></tbody></table>'
-       + '<p class="sm-note">Un plateau n\'est pas partagé entre deux variétés : ce total est plus haut que le calcul rapide, et c\'est celui qui correspond au semis réel.</p>';
-    }
-    return h+'</div>';
-  }
-
-  function viewReglages(){
-    var h='<div class="sm-card sm-tab"><h3>Capacité des plateaux — alvéoles</h3>'
-     + '<table><thead><tr><th>Plateau</th><th>Petites</th><th>Grosses</th></tr></thead><tbody>';
-    for(var k in SM.caps){ var p=SM.caps[k];
-      h+='<tr><td>'+p.nom+'</td>'
-       + '<td><input type="number" min="1" inputmode="numeric" value="'+p.petite+'" style="width:74px;display:inline-block;font-family:inherit;border:1.5px solid var(--border);background:var(--surface2);border-radius:7px;padding:5px;color:var(--text);text-align:right" oninput="smCap(\''+k+'\',\'petite\',this.value)"></td>'
-       + '<td><input type="number" min="1" inputmode="numeric" value="'+p.grosse+'" style="width:74px;display:inline-block;font-family:inherit;border:1.5px solid var(--border);background:var(--surface2);border-radius:7px;padding:5px;color:var(--text);text-align:right" oninput="smCap(\''+k+'\',\'grosse\',this.value)"></td></tr>'; }
-    h+='</tbody></table><p class="sm-note">À vérifier sur un plateau réel : compte une rangée × une colonne. C\'est le paramètre le plus sensible du calcul.</p></div>';
-    h+='<div class="sm-card"><h3>Valeurs par défaut</h3><div class="sm-g2">'
-     + '<div><span class="sm-lab">Marge % défaut</span><input type="number" min="0" max="200" step="5" inputmode="numeric" value="'+SM.marge+'" oninput="smGlob(\'marge\',this.value)"></div>'
-     + '<div><span class="sm-lab">Largeur planche (m)</span><input type="number" min="0.2" max="3" step="0.05" inputmode="decimal" value="'+SM.largeur+'" oninput="smGlob(\'largeur\',this.value)"></div></div>'
-     + '<div style="margin-top:9px"><span class="sm-lab">Écartements proposés (cm)</span>'
-     + '<input type="text" value="'+SM.ecarts.join(', ')+'" onchange="smEcarts(this.value)"></div>'
-     + '<p class="sm-note">La liste des variétés vient directement de l\'onglet <b>✏️ Fleurs</b>. « Autre… » permet un nom hors catalogue.</p></div>';
-    return h;
-  }
-
-  function buildSemis(){
-    ensureStyle();
-    var lab={plants:'Plants',plateaux:'Plateaux',reglages:'Réglages'};
-    var h='<div class="sm-sub">'+['plants','plateaux','reglages'].map(function(k){
-      return '<button class="'+(SM.sub===k?'on':'')+'" onclick="smSub(\''+k+'\')">'+lab[k]+'</button>'; }).join('')+'</div>';
-    if(SM.sub==='plateaux')h+=viewPlateaux();
-    else if(SM.sub==='reglages')h+=viewReglages();
-    else h+=viewPlants();
-    return h;
-  }
-
-  // handlers
-  window.smSub=function(k){ SM.sub=k; smSave(); renderMain(); };
-  window.smAdd=function(){ SM.lignes.push({variete:'',surface:'',ecart:SM.ecarts[0],marge:SM.marge,motte:SM.motte,plateau:SM.plateau}); smSave(); renderMain(); };
-  window.smDel=function(i){ SM.lignes.splice(i,1); smSave(); renderMain(); };
-  window.smVar=function(i,el){
-    if(el.value==='__autre'){ var v=prompt('Nom de la variété :',SM.lignes[i].variete||'');
-      SM.lignes[i].variete=v?v.trim():(SM.lignes[i].variete||''); }
-    else SM.lignes[i].variete=el.value;
-    smSave(); renderMain();
-  };
-  window.smSet=function(i,f,v,redraw){
-    SM.lignes[i][f]=v; smSave();
-    if(redraw){ renderMain(); return; }
-    var el=document.getElementById('smRes'+i);
-    if(el)el.innerHTML=resHTML(calc(SM.lignes[i]));
-    var t=totaux(), tl=document.querySelectorAll('.sm-tot .sm-tl strong');
-    if(tl.length===4){ tl[0].textContent=nf(t.plants); tl[1].textContent=nf(t.semis);
-      tl[2].textContent=nf(t.levee); tl[3].textContent=nf(t.planche); }
-  };
-  window.smGlob=function(f,v){
-    if(f==='override'){ SM.override=(v===null||v==='')?null:v; smSave();
-      if(v===null)renderMain();
-      else{ var s=Number(v)||0, cp=cap(SM.plateau,SM.motte), nb=cp>0?Math.ceil(s/cp):0;
-            var b=document.querySelector('.sm-res b'); if(b)b.textContent=nf(nb); }
-      return; }
-    if(f==='marge')SM.marge=Number(v)||0;
-    else if(f==='largeur')SM.largeur=Number(v)||0.8;
-    else SM[f]=v;
-    smSave();
-    if(f==='motte'||f==='plateau')renderMain();
-  };
-  window.smCap=function(k,m,v){ SM.caps[k][m]=Math.max(1,Number(v)||1); smSave(); };
-  window.smEcarts=function(v){
-    var a=v.split(',').map(function(x){return parseFloat(String(x).replace(',','.'));})
-          .filter(function(x){return isFinite(x)&&x>0;});
-    if(a.length)SM.ecarts=a; smSave(); renderMain();
-  };
-
-  // greffe sur renderMain (binding de déclaration de fonction, réassignable)
-  var _rmOld=renderMain;
-  renderMain=function(){
-    if(state.activeTab==='semis'){
-      renderTabs();
-      document.getElementById('mainContent').innerHTML=buildSemis();
-      return;
-    }
-    return _rmOld.apply(this,arguments);
-  };
-})();
-// ═══ FIN MODULE SEMIS ════════════════════════════════════════════════
-
 </body>
 </html>
