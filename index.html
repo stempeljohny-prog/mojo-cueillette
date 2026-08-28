@@ -568,12 +568,46 @@ function renderTabs(){
 window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
 // ═══ MODULE SEMIS ═══════════════════════════════════════════════════
 (function(){
-  var DEF={sub:'plants',marge:40,largeur:0.80,ecarts:[15,23,33],motte:'petite',plateau:'botanic',override:null,lignes:[],
-    caps:{ikea:{nom:'Gris Ikea',petite:70,grosse:40},botanic:{nom:'Botanic',petite:140,grosse:70},noir:{nom:'Noir',petite:140,grosse:70}}};
+  var DEF={sub:'plants',marge:40,largeur:0.80,ecarts:[15,23,33],motte:'petite',plateau:'botanic',override:null,
+    caps:{ikea:{nom:'Gris Ikea',petite:70,grosse:40},botanic:{nom:'Botanic',petite:140,grosse:70},noir:{nom:'Noir',petite:140,grosse:70}},
+    ecartMemo:{}, series:[], serieActive:null};
   var SM;
-  try{ SM=Object.assign({},DEF,JSON.parse(localStorage.getItem('mojo_semis')||'{}')); }catch(e){ SM=Object.assign({},DEF); }
-  SM.caps=Object.assign({},DEF.caps,SM.caps||{});
-  function smSave(){ try{ localStorage.setItem('mojo_semis',JSON.stringify(SM)); }catch(e){} }
+  function normalise(o){
+    var s=Object.assign({},DEF,o||{});
+    s.caps=Object.assign({},DEF.caps,s.caps||{});
+    if(!s.ecartMemo||typeof s.ecartMemo!=='object')s.ecartMemo={};
+    if(!Array.isArray(s.ecarts)||!s.ecarts.length)s.ecarts=DEF.ecarts.slice();
+    // Firebase renvoie parfois les tableaux sous forme d'objets
+    if(s.series&&!Array.isArray(s.series))s.series=Object.keys(s.series).map(function(k){return s.series[k];});
+    if(!Array.isArray(s.series))s.series=[];
+    // migration depuis l'ancienne liste unique
+    if(!s.series.length){
+      s.series=[{id:'s'+Date.now(),nom:'Serie 1',lignes:Array.isArray(s.lignes)?s.lignes:[]}];
+    }
+    delete s.lignes;
+    s.series.forEach(function(x){
+      if(x.lignes&&!Array.isArray(x.lignes))x.lignes=Object.keys(x.lignes).map(function(k){return x.lignes[k];});
+      if(!Array.isArray(x.lignes))x.lignes=[];
+      x.lignes.forEach(function(l){ if(l.fait===undefined)l.fait=false; if(l.dateFait===undefined)l.dateFait=''; });
+    });
+    if(!s.serieActive||!s.series.some(function(x){return x.id===s.serieActive;}))s.serieActive=s.series[0].id;
+    return s;
+  }
+  // Au demarrage Firebase n'a pas encore repondu : on part du cache local.
+  try{ SM=normalise(JSON.parse(localStorage.getItem('mojo_semis')||'{}')); }
+  catch(e){ SM=normalise(null); }
+
+  function smSave(){
+    state.semis=SM;
+    try{ localStorage.setItem('mojo_semis',JSON.stringify(SM)); }catch(e){}
+    try{ scheduleSave(); }catch(e){}
+  }
+  function serie(){ return SM.series.filter(function(s){return s.id===SM.serieActive;})[0]||SM.series[0]; }
+  function LG(){ var s=serie(); if(!Array.isArray(s.lignes))s.lignes=[]; return s.lignes; }
+  function smToday(){ var d=new Date(),p=function(n){return(n<10?'0':'')+n;};
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+  function dFr(k){ if(!k)return''; var a=k.split('-');
+    return new Date(a[0],a[1]-1,a[2]).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'2-digit'}); }
 
   function nf(n,d){ d=d||0; if(!isFinite(n))n=0;
     return n.toLocaleString('fr-FR',{minimumFractionDigits:d,maximumFractionDigits:d}); }
@@ -590,7 +624,7 @@ window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
     return {dens:dens,plants:plants,semis:semis,levee:levee,planche:planche,marge:m};
   }
   function totaux(){ var t={plants:0,semis:0,levee:0,planche:0};
-    SM.lignes.forEach(function(l){var c=calc(l);t.plants+=c.plants;t.semis+=c.semis;t.levee+=c.levee;t.planche+=c.planche;});
+    LG().forEach(function(l){var c=calc(l);t.plants+=c.plants;t.semis+=c.semis;t.levee+=c.levee;t.planche+=c.planche;});
     return t; }
   function cap(p,m){ var x=SM.caps[p]; return x?(Number(x[m])||0):0; }
   function cols(n){ var b=10,d0=1e9; for(var d=2;d<=n;d++){ if(n%d)continue;
@@ -600,8 +634,11 @@ window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
     if(document.getElementById('semisStyle'))return;
     var s=document.createElement('style'); s.id='semisStyle';
     s.textContent=
+    '.sm-serie{display:flex;gap:7px;margin-bottom:12px}'+
+    '.sm-serie select{flex:1;min-width:0;font-family:inherit;font-size:.88rem;font-weight:600;color:var(--text);background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:8px 9px}'+
+    '.sm-serie button{flex:0 0 auto;width:40px;border:1.5px solid var(--border);background:var(--surface);color:var(--accent);border-radius:10px;font-size:1.1rem;font-family:inherit;cursor:pointer}'+
     '.sm-sub{display:flex;gap:0;margin-bottom:14px;background:var(--surface2);border-radius:10px;padding:3px}'+
-    '.sm-sub button{flex:1;padding:7px;border:none;background:transparent;border-radius:8px;font-family:inherit;font-size:.8rem;font-weight:500;cursor:pointer;color:var(--text2)}'+
+    '.sm-sub button{flex:1;padding:7px 2px;border:none;background:transparent;border-radius:8px;font-family:inherit;font-size:.75rem;font-weight:500;cursor:pointer;color:var(--text2)}'+
     '.sm-sub button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}'+
     '.sm-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}'+
     '.sm-card h3{font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:10px}'+
@@ -637,7 +674,23 @@ window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
     '.sm-tab td.b{font-weight:700;color:var(--accent)}'+
     '.sm-note{font-size:.78rem;color:var(--text2);line-height:1.55;margin-top:10px}'+
     '.sm-note b{color:var(--text)}'+
-    '.sm-empty{text-align:center;color:var(--text2);padding:20px 0;font-size:.88rem}';
+    '.sm-empty{text-align:center;color:var(--text2);padding:20px 0;font-size:.88rem}'+
+    '.sm-rec{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}'+
+    '.sm-rec:last-child{border-bottom:0}'+
+    '.sm-rec.done{opacity:.6}'+
+    '.sm-rec.done .sm-rn{text-decoration:line-through}'+
+    '.sm-chk{width:26px;height:26px;border-radius:7px;border:2px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.9rem;transition:all .15s}'+
+    '.sm-chk.on{background:var(--accent);border-color:var(--accent);color:#fff}'+
+    '.sm-ri{flex:1;min-width:0}'+
+    '.sm-rn{font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'+
+    '.sm-rd{font-size:.74rem;color:var(--text2)}'+
+    '.sm-rq{font-weight:700;color:var(--accent);font-size:.95rem;white-space:nowrap}'+
+    '.sm-date{border:none;border-bottom:1px solid var(--border);background:transparent;font-family:inherit;font-size:.72rem;color:var(--text2);padding:1px 0;width:112px}'+
+    '.sm-prog{height:8px;background:var(--surface2);border-radius:8px;overflow:hidden;margin:10px 0 5px}'+
+    '.sm-prog>div{height:100%;background:var(--accent);border-radius:8px;transition:width .4s}'+
+    '.sm-memo{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:.85rem}'+
+    '.sm-memo:last-child{border-bottom:0}'+
+    '.sm-memo button{background:none;border:none;color:#ccc;font-size:.85rem;cursor:pointer;padding:0 0 0 8px}';
     document.head.appendChild(s);
   }
 
@@ -660,15 +713,24 @@ window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
   function resHTML(c){ return '<b>'+nf(c.semis)+'</b><span>semis</span><span class="v">'+nf(c.plants)+
     ' plants</span><span>'+nf(c.dens,1)+' pl/m²</span>'; }
 
+  function serieBar(){
+    return '<div class="sm-serie"><select onchange="smSerie(this.value)">'
+      + SM.series.map(function(s){ return '<option value="'+s.id+'"'+(s.id===SM.serieActive?' selected':'')+'>'
+        + s.nom.replace(/</g,'&lt;')+' ('+(s.lignes||[]).length+')</option>'; }).join('')
+      + '</select><button onclick="smSerieNew()" title="Nouvelle série">+</button></div>';
+  }
+
+  // ── PLANTS ────────────────────────────────────────────────────────
   function viewPlants(){
-    var h='';
-    if(!SM.lignes.length){ h+='<div class="sm-card"><p class="sm-empty">Aucune variété. Ajoute une ligne pour démarrer.</p></div>'; }
-    else SM.lignes.forEach(function(l,i){ var c=calc(l);
+    var h='', L=LG();
+    if(!L.length){ h+='<div class="sm-card"><p class="sm-empty">Aucune variété dans cette série.</p></div>'; }
+    else L.forEach(function(l,i){ var c=calc(l);
+      var memo=l.variete&&SM.ecartMemo[l.variete]!=null;
       h+='<div class="sm-card"><div class="sm-head"><div><span class="sm-lab">Variété</span>'
       + '<select onchange="smVar('+i+',this)">'+optVar(l.variete)+'</select></div>'
       + '<button class="sm-del" onclick="smDel('+i+')">✕</button></div><div class="sm-g3">'
       + '<div><span class="sm-lab">Surface m²</span><input type="number" min="0" step="0.5" inputmode="decimal" value="'+(l.surface||'')+'" oninput="smSet('+i+',\'surface\',this.value)"></div>'
-      + '<div><span class="sm-lab">Écartement</span><select onchange="smSet('+i+',\'ecart\',this.value,1)">'+optEcart(l.ecart)+'</select></div>'
+      + '<div><span class="sm-lab">Écart.'+(memo?' ✓':'')+'</span><select onchange="smSet('+i+',\'ecart\',this.value,1)">'+optEcart(l.ecart)+'</select></div>'
       + '<div><span class="sm-lab">Marge %</span><input type="number" min="0" max="200" step="5" inputmode="numeric" value="'+c.marge+'" oninput="smSet('+i+',\'marge\',this.value)"></div>'
       + '</div><div class="sm-res" id="smRes'+i+'">'+resHTML(c)+'</div></div>';
     });
@@ -679,11 +741,44 @@ window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
      + '<div class="sm-tl"><span>Semis à faire</span><strong>'+nf(t.semis)+'</strong></div>'
      + '<div class="sm-tl s"><span>Variante « taux de levée »</span><strong>'+nf(t.levee)+'</strong></div>'
      + '<div class="sm-tl s"><span>Ajusté largeur de planche</span><strong>'+nf(t.planche)+'</strong></div></div>'
-     + '<p class="sm-note"><b>Surface nette de planche</b>, allées exclues. Surface ÷ écartement² surestime toujours un peu : sur une planche de largeur finie tu perds les rangs incomplets — d\'où la ligne « ajusté », 5 à 15 % plus basse en général.</p>'
-     + '<p class="sm-note"><b>Marge vs taux de levée.</b> +40 % de marge = ×1,40. 40 % de pertes = ×1,67. 19 % d\'écart sur la commande de graines.</p>';
+     + '<p class="sm-note">Le <b>✓</b> à côté d\'« Écart. » signale un écartement mémorisé pour cette variété : il se réapplique tout seul quand tu la choisis dans une autre série.</p>';
     return h;
   }
 
+  // ── À FAIRE ───────────────────────────────────────────────────────
+  function viewRecap(){
+    var L=LG();
+    if(!L.length) return '<div class="sm-card"><p class="sm-empty">Aucune variété dans cette série. Ajoute-les dans l\'onglet Plants.</p></div>';
+    var faits=L.filter(function(l){return l.fait;}).length;
+    var pct=L.length?(faits/L.length)*100:0;
+    var reste=0; L.forEach(function(l){ if(!l.fait) reste+=calc(l).semis; });
+
+    var row=function(l,i){
+      var c=calc(l);
+      return '<div class="sm-rec'+(l.fait?' done':'')+'">'
+       + '<div class="sm-chk'+(l.fait?' on':'')+'" onclick="smFait('+i+')">'+(l.fait?'✓':'')+'</div>'
+       + '<div class="sm-ri"><div class="sm-rn">'+(l.variete||'—')+'</div>'
+       + (l.fait
+          ? '<div class="sm-rd">Semé le <input type="date" class="sm-date" value="'+(l.dateFait||smToday())+'" onchange="smDate('+i+',this.value)"></div>'
+          : '<div class="sm-rd">'+nf(c.plants)+' plants · '+(l.ecart||'?')+' cm · '+nf(l.surface||0,0)+' m²</div>')
+       + '</div><div class="sm-rq">'+nf(c.semis)+'</div></div>';
+    };
+    var aFaire=[], deja=[];
+    L.forEach(function(l,i){ (l.fait?deja:aFaire).push(row(l,i)); });
+
+    var h='<div class="sm-card"><h3>Avancement</h3>'
+     + '<div style="display:flex;justify-content:space-between;align-items:baseline">'
+     + '<span style="font-family:\'DM Serif Display\',serif;font-size:1.6rem">'+faits+' / '+L.length+'</span>'
+     + '<span style="font-size:.8rem;color:var(--text2)">'+nf(reste)+' semis restants</span></div>'
+     + '<div class="sm-prog"><div style="width:'+pct+'%"></div></div></div>';
+
+    if(aFaire.length) h+='<div class="sm-card"><h3>À semer — '+aFaire.length+'</h3>'+aFaire.join('')+'</div>';
+    if(deja.length)   h+='<div class="sm-card"><h3>Faits — '+deja.length+'</h3>'+deja.join('')+'</div>';
+    h+='<p class="sm-note">Le grand chiffre est le nombre de <b>semis</b> à faire, marge comprise. Le nombre de plants en place est en dessous, en petit.</p>';
+    return h;
+  }
+
+  // ── PLATEAUX ──────────────────────────────────────────────────────
   function viewPlateaux(){
     var semis=(SM.override===null||SM.override==='')?totaux().semis:(Number(SM.override)||0);
     var cp=cap(SM.plateau,SM.motte), nb=cp>0?Math.ceil(semis/cp):0, reste=nb>0?semis-(nb-1)*cp:0;
@@ -692,20 +787,21 @@ window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
      + '<div><span class="sm-lab">Type de plateau</span><select onchange="smGlob(\'plateau\',this.value)">'+optPlateau(SM.plateau)+'</select></div></div>'
      + '<div style="margin-top:9px"><span class="sm-lab">Nombre de semis</span>'
      + '<input type="number" min="0" step="1" inputmode="numeric" value="'+semis+'" oninput="smGlob(\'override\',this.value)"></div>'
-     + '<button class="sm-btn" style="margin-top:9px" onclick="smGlob(\'override\',null)">↻ Reprendre le total de Plants</button>'
+     + '<button class="sm-btn" style="margin-top:9px" onclick="smGlob(\'override\',null)">↻ Reprendre le total de la série</button>'
      + '<div class="sm-res"><b>'+nf(nb)+'</b><span>plateaux</span><span class="v">'+(cp?cp+' alvéoles / plateau':'capacité non définie')+'</span></div>';
     if(cp>0&&cp<=400){ var c=cols(cp), cells='';
       for(var i=0;i<cp;i++)cells+='<div class="sm-cell'+(i<reste?' f':'')+'"></div>';
       h+='<div class="sm-tray" style="grid-template-columns:repeat('+c+',1fr)">'+cells+'</div>'
        + '<p class="sm-cap">'+(nb>0?'Dernier plateau : '+nf(reste)+' / '+nf(cp)+' alvéoles remplies':'—')+'</p>'; }
     h+='</div><div class="sm-card sm-tab"><h3>Détail par variété</h3>';
-    if(!SM.lignes.length){ h+='<p class="sm-empty">Rien à répartir.</p>'; }
+    var L=LG();
+    if(!L.length){ h+='<p class="sm-empty">Rien à répartir.</p>'; }
     else{
       h+='<table><thead><tr><th>Variété</th><th>Semis</th><th>Motte</th><th>Plateau</th><th>Pl.</th></tr></thead><tbody>';
       var tot=0;
-      SM.lignes.forEach(function(l,i){ var c2=calc(l), mo=l.motte||SM.motte, pl=l.plateau||SM.plateau;
+      L.forEach(function(l,i){ var c2=calc(l), mo=l.motte||SM.motte, pl=l.plateau||SM.plateau;
         var cc=cap(pl,mo), n=cc>0?Math.ceil(c2.semis/cc):0; tot+=n;
-        h+='<tr><td>'+(l.variete||'—')+'</td><td>'+nf(c2.semis)+'</td>'
+        h+='<tr><td>'+(l.variete||'—')+(l.fait?' ✓':'')+'</td><td>'+nf(c2.semis)+'</td>'
          + '<td><select onchange="smSet('+i+',\'motte\',this.value,1)">'+optMotte(mo)+'</select></td>'
          + '<td><select onchange="smSet('+i+',\'plateau\',this.value,1)">'+optPlateau(pl)+'</select></td>'
          + '<td class="b">'+nf(n)+'</td></tr>'; });
@@ -715,53 +811,85 @@ window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
     return h+'</div>';
   }
 
+  // ── RÉGLAGES ──────────────────────────────────────────────────────
   function viewReglages(){
-    var h='<div class="sm-card sm-tab"><h3>Capacité des plateaux — alvéoles</h3>'
+    var h='<div class="sm-card"><h3>Série en cours</h3>'
+     + '<button class="sm-btn" onclick="smSerieDup()">⧉ Dupliquer pour une nouvelle saison</button>'
+     + '<button class="sm-btn" onclick="smSerieRen()">✎ Renommer</button>'
+     + '<button class="sm-btn" style="color:var(--danger);margin-bottom:0" onclick="smSerieDel()">🗑 Supprimer cette série</button>'
+     + '<p class="sm-note">Dupliquer reprend les variétés, surfaces et écartements, et remet toutes les cases à décocher. C\'est le geste de printemps.</p></div>';
+
+    h+='<div class="sm-card sm-tab"><h3>Capacité des plateaux — alvéoles</h3>'
      + '<table><thead><tr><th>Plateau</th><th>Petites</th><th>Grosses</th></tr></thead><tbody>';
     for(var k in SM.caps){ var p=SM.caps[k];
+      var st='width:74px;display:inline-block;font-family:inherit;border:1.5px solid var(--border);background:var(--surface2);border-radius:7px;padding:5px;color:var(--text);text-align:right';
       h+='<tr><td>'+p.nom+'</td>'
-       + '<td><input type="number" min="1" inputmode="numeric" value="'+p.petite+'" style="width:74px;display:inline-block;font-family:inherit;border:1.5px solid var(--border);background:var(--surface2);border-radius:7px;padding:5px;color:var(--text);text-align:right" oninput="smCap(\''+k+'\',\'petite\',this.value)"></td>'
-       + '<td><input type="number" min="1" inputmode="numeric" value="'+p.grosse+'" style="width:74px;display:inline-block;font-family:inherit;border:1.5px solid var(--border);background:var(--surface2);border-radius:7px;padding:5px;color:var(--text);text-align:right" oninput="smCap(\''+k+'\',\'grosse\',this.value)"></td></tr>'; }
+       + '<td><input type="number" min="1" inputmode="numeric" value="'+p.petite+'" style="'+st+'" oninput="smCap(\''+k+'\',\'petite\',this.value)"></td>'
+       + '<td><input type="number" min="1" inputmode="numeric" value="'+p.grosse+'" style="'+st+'" oninput="smCap(\''+k+'\',\'grosse\',this.value)"></td></tr>'; }
     h+='</tbody></table><p class="sm-note">À vérifier sur un plateau réel : compte une rangée × une colonne. C\'est le paramètre le plus sensible du calcul.</p></div>';
+
+    var noms=Object.keys(SM.ecartMemo).sort(function(a,b){return a.localeCompare(b,'fr');});
+    h+='<div class="sm-card"><h3>Écartements mémorisés — '+noms.length+'</h3>';
+    h+= noms.length
+      ? noms.map(function(n){ return '<div class="sm-memo"><span>'+n+'</span><span><b style="color:var(--accent)">'
+          +SM.ecartMemo[n]+' cm</b><button onclick="smMemoDel(\''+n.replace(/'/g,"\\'")+'\')">✕</button></span></div>'; }).join('')
+      : '<p class="sm-empty" style="padding:10px 0">Rien encore. Choisis un écartement dans l\'onglet Plants et il s\'enregistre.</p>';
+    h+='</div>';
+
     h+='<div class="sm-card"><h3>Valeurs par défaut</h3><div class="sm-g2">'
      + '<div><span class="sm-lab">Marge % défaut</span><input type="number" min="0" max="200" step="5" inputmode="numeric" value="'+SM.marge+'" oninput="smGlob(\'marge\',this.value)"></div>'
      + '<div><span class="sm-lab">Largeur planche (m)</span><input type="number" min="0.2" max="3" step="0.05" inputmode="decimal" value="'+SM.largeur+'" oninput="smGlob(\'largeur\',this.value)"></div></div>'
      + '<div style="margin-top:9px"><span class="sm-lab">Écartements proposés (cm)</span>'
      + '<input type="text" value="'+SM.ecarts.join(', ')+'" onchange="smEcarts(this.value)"></div>'
-     + '<p class="sm-note">La liste des variétés vient directement de l\'onglet <b>✏️ Fleurs</b>. « Autre… » permet un nom hors catalogue.</p></div>';
+     + '<p class="sm-note">La liste des variétés vient de l\'onglet <b>✏️ Fleurs</b>. « Autre… » permet un nom hors catalogue.</p></div>';
     return h;
   }
 
   function buildSemis(){
     ensureStyle();
-    var lab={plants:'Plants',plateaux:'Plateaux',reglages:'Réglages'};
-    var h='<div class="sm-sub">'+['plants','plateaux','reglages'].map(function(k){
+    // Donnees arrivees d'un autre telephone via Firebase : on les adopte
+    if(state.semis&&state.semis!==SM){ SM=normalise(state.semis); state.semis=SM; }
+    var lab={plants:'Plants',recap:'À faire',plateaux:'Plateaux',reglages:'Réglages'};
+    var h=serieBar()+'<div class="sm-sub">'+['plants','recap','plateaux','reglages'].map(function(k){
       return '<button class="'+(SM.sub===k?'on':'')+'" onclick="smSub(\''+k+'\')">'+lab[k]+'</button>'; }).join('')+'</div>';
-    if(SM.sub==='plateaux')h+=viewPlateaux();
+    if(SM.sub==='recap')h+=viewRecap();
+    else if(SM.sub==='plateaux')h+=viewPlateaux();
     else if(SM.sub==='reglages')h+=viewReglages();
     else h+=viewPlants();
     return h;
   }
 
-  // handlers
+  // ── handlers ──────────────────────────────────────────────────────
   window.smSub=function(k){ SM.sub=k; smSave(); renderMain(); };
-  window.smAdd=function(){ SM.lignes.push({variete:'',surface:'',ecart:SM.ecarts[0],marge:SM.marge,motte:SM.motte,plateau:SM.plateau}); smSave(); renderMain(); };
-  window.smDel=function(i){ SM.lignes.splice(i,1); smSave(); renderMain(); };
+  window.smAdd=function(){ LG().push({variete:'',surface:'',ecart:SM.ecarts[0],marge:SM.marge,
+    motte:SM.motte,plateau:SM.plateau,fait:false,dateFait:''}); smSave(); renderMain(); };
+  window.smDel=function(i){ LG().splice(i,1); smSave(); renderMain(); };
   window.smVar=function(i,el){
-    if(el.value==='__autre'){ var v=prompt('Nom de la variété :',SM.lignes[i].variete||'');
-      SM.lignes[i].variete=v?v.trim():(SM.lignes[i].variete||''); }
-    else SM.lignes[i].variete=el.value;
+    var l=LG()[i];
+    if(el.value==='__autre'){ var v=prompt('Nom de la variété :',l.variete||'');
+      l.variete=v?v.trim():(l.variete||''); }
+    else l.variete=el.value;
+    if(l.variete&&SM.ecartMemo[l.variete]!=null) l.ecart=SM.ecartMemo[l.variete];
     smSave(); renderMain();
   };
   window.smSet=function(i,f,v,redraw){
-    SM.lignes[i][f]=v; smSave();
+    var l=LG()[i]; l[f]=v;
+    if(f==='ecart'&&l.variete) SM.ecartMemo[l.variete]=Number(v)||v;
+    smSave();
     if(redraw){ renderMain(); return; }
     var el=document.getElementById('smRes'+i);
-    if(el)el.innerHTML=resHTML(calc(SM.lignes[i]));
+    if(el)el.innerHTML=resHTML(calc(l));
     var t=totaux(), tl=document.querySelectorAll('.sm-tot .sm-tl strong');
     if(tl.length===4){ tl[0].textContent=nf(t.plants); tl[1].textContent=nf(t.semis);
       tl[2].textContent=nf(t.levee); tl[3].textContent=nf(t.planche); }
   };
+  window.smFait=function(i){
+    var l=LG()[i]; l.fait=!l.fait;
+    if(l.fait&&!l.dateFait) l.dateFait=smToday();
+    smSave(); renderMain();
+    if(l.fait&&typeof showToast==='function') showToast((l.variete||'Semis')+' — '+dFr(l.dateFait));
+  };
+  window.smDate=function(i,v){ LG()[i].dateFait=v; smSave(); };
   window.smGlob=function(f,v){
     if(f==='override'){ SM.override=(v===null||v==='')?null:v; smSave();
       if(v===null)renderMain();
@@ -775,13 +903,42 @@ window._tab=function(id){state.activeTab=id;renderTabs();renderMain();};
     if(f==='motte'||f==='plateau')renderMain();
   };
   window.smCap=function(k,m,v){ SM.caps[k][m]=Math.max(1,Number(v)||1); smSave(); };
+  window.smMemoDel=function(n){ delete SM.ecartMemo[n]; smSave(); renderMain(); };
   window.smEcarts=function(v){
     var a=v.split(',').map(function(x){return parseFloat(String(x).replace(',','.'));})
           .filter(function(x){return isFinite(x)&&x>0;});
     if(a.length)SM.ecarts=a; smSave(); renderMain();
   };
+  window.smSerie=function(id){ SM.serieActive=id; SM.override=null; smSave(); renderMain(); };
+  window.smSerieNew=function(){
+    var n=prompt('Nom de la nouvelle série :','Semis '+new Date().getFullYear());
+    if(!n)return;
+    var s={id:'s'+Date.now(),nom:n.trim(),lignes:[]};
+    SM.series.push(s); SM.serieActive=s.id; SM.override=null; smSave(); renderMain();
+  };
+  window.smSerieDup=function(){
+    var src=serie();
+    var n=prompt('Nom de la nouvelle série :',src.nom+' — copie');
+    if(!n)return;
+    var s={id:'s'+Date.now(),nom:n.trim(),lignes:(src.lignes||[]).map(function(l){
+      return {variete:l.variete,surface:l.surface,ecart:l.ecart,marge:l.marge,
+              motte:l.motte,plateau:l.plateau,fait:false,dateFait:''}; })};
+    SM.series.push(s); SM.serieActive=s.id; SM.override=null; smSave(); renderMain();
+    if(typeof showToast==='function') showToast('Série dupliquée');
+  };
+  window.smSerieRen=function(){
+    var s=serie(), n=prompt('Nouveau nom :',s.nom);
+    if(!n)return; s.nom=n.trim(); smSave(); renderMain();
+  };
+  window.smSerieDel=function(){
+    if(SM.series.length<2){ alert('Impossible de supprimer la dernière série.'); return; }
+    var s=serie();
+    if(!confirm('Supprimer « '+s.nom+' » et toutes ses lignes ?'))return;
+    SM.series=SM.series.filter(function(x){return x.id!==s.id;});
+    SM.serieActive=SM.series[0].id; SM.override=null; smSave(); renderMain();
+  };
 
-  // greffe sur renderMain (binding de déclaration de fonction, réassignable)
+  // greffe sur renderMain
   var _rmOld=renderMain;
   renderMain=function(){
     if(state.activeTab==='semis'){
