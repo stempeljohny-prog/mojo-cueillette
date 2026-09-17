@@ -344,7 +344,8 @@ function defaultState(){
     commandes: {}, // { cmdId: {...} }
     activeCommande: null,
     sechees: [], // [{id,name,pu,stock}] stock = nombre de bottes
-    seaux: {total:0, mouvements:[]}, // {total:stock actuel, mouvements:[{date,type:'sortie'|'retour',qty,fleuriste}]}
+    seaux: {stock:{procona:0,petit:0,carre:0}, mouvements:[]},
+    _seauType: 'procona', // stock par type + mouvements:[{date,sens:'sortie'|'retour',type:'procona'|'petit'|'carre',qty,fleuriste}]
 
   };
 }
@@ -363,7 +364,7 @@ let _localWriteTime=0;
 function pushToFirebase(){
   setSyncStatus('syncing');
   _localWriteTime=Date.now();
-  set(ref(db,ROOT),{flowers:state.flowers,florists:state.florists,sessions:state.sessions,dispo:state.dispo||{},commandes:state.commandes||{},sechees:state.sechees||[],seaux:state.seaux||{total:0,mouvements:[]}})
+  set(ref(db,ROOT),{flowers:state.flowers,florists:state.florists,sessions:state.sessions,dispo:state.dispo||{},commandes:state.commandes||{},sechees:state.sechees||[],seaux:state.seaux||{stock:{procona:0,petit:0,carre:0},mouvements:[]}})
     .then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
 }
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(pushToFirebase,800);}
@@ -891,66 +892,119 @@ window._toggleGroup=function(fid){
 };
 
 // ── SEAUX ─────────────────────────────────────────────────────────────
-function buildSeaux(){
-  const seaux=state.seaux||{total:0,mouvements:[]};
-  const total=seaux.total||0;
-  const mouvements=(seaux.mouvements||[]).slice().reverse(); // plus récent en premier
+const SEAU_TYPES=[
+  {id:'procona',label:'Procona',color:'#c0392b'},
+  {id:'petit',label:'Petit',color:'#e67e22'},
+  {id:'carre',label:'Carré',color:'#5c8a3c'},
+];
 
-  // Calcul seaux dehors (sortis - rentrés) par fleuriste
-  const parFleuriste={};
-  (seaux.mouvements||[]).forEach(m=>{
-    const f=m.fleuriste||'—';
-    if(!parFleuriste[f]) parFleuriste[f]=0;
-    parFleuriste[f]+=(m.type==='sortie'?m.qty:-m.qty);
+function migrateSeaux(){
+  // Migration depuis l'ancien format {total,mouvements:[{type:'sortie'...}]}
+  if(!state.seaux) state.seaux={stock:{procona:0,petit:0,carre:0},mouvements:[]};
+  if(!state.seaux.stock) state.seaux.stock={procona:0,petit:0,carre:0};
+  if(state.seaux.stock.procona==null) state.seaux.stock.procona=0;
+  if(state.seaux.stock.petit==null) state.seaux.stock.petit=0;
+  if(state.seaux.stock.carre==null) state.seaux.stock.carre=0;
+  if(!Array.isArray(state.seaux.mouvements)) state.seaux.mouvements=[];
+  // Migrer les anciens mouvements (avaient 'type' = sens, pas de type de seau)
+  state.seaux.mouvements.forEach(m=>{
+    if(m.sens==null && m.type && (m.type==='sortie'||m.type==='retour')){
+      m.sens=m.type;
+      m.type='procona'; // par défaut on suppose procona pour l'ancien
+    }
+    if(!m.type) m.type='procona';
+    if(!m.sens) m.sens='sortie';
   });
-  const dehors=Object.entries(parFleuriste).filter(([f,n])=>n>0).sort((a,b)=>b[1]-a[1]);
-  const totalDehors=dehors.reduce((s,[f,n])=>s+n,0);
+}
+
+function seauxDehorsParFleuriste(){
+  // Retourne { fleuriste: {procona:n, petit:n, carre:n} }
+  const out={};
+  (state.seaux.mouvements||[]).forEach(m=>{
+    const f=m.fleuriste||'—';
+    if(!out[f]) out[f]={procona:0,petit:0,carre:0};
+    const delta=(m.sens==='sortie'?m.qty:-m.qty);
+    out[f][m.type]=(out[f][m.type]||0)+delta;
+  });
+  return out;
+}
+
+function buildSeaux(){
+  migrateSeaux();
+  const seaux=state.seaux;
+  const stock=seaux.stock;
+  const mouvements=(seaux.mouvements||[]).slice().reverse();
+
+  const dehorsAll=seauxDehorsParFleuriste();
+  // Filtrer les fleuristes qui ont au moins 1 seau dehors
+  const dehorsList=Object.entries(dehorsAll)
+    .map(([f,types])=>({f,types,total:types.procona+types.petit+types.carre}))
+    .filter(x=>x.total>0)
+    .sort((a,b)=>b.types.procona-a.types.procona || b.total-a.total);
+
+  // Totaux dehors par type
+  const totalDehors={procona:0,petit:0,carre:0};
+  dehorsList.forEach(x=>{
+    totalDehors.procona+=Math.max(0,x.types.procona);
+    totalDehors.petit+=Math.max(0,x.types.petit);
+    totalDehors.carre+=Math.max(0,x.types.carre);
+  });
 
   const florists=state.florists||[];
   const floristOpts=florists.map(f=>`<option value="${f.name}">`).join('');
 
-  const dehorsHTML=dehors.length>0
-    ? dehors.map(([f,n])=>`<div class="cmd-line" style="padding:8px 0">
-        <div class="cmd-line-info">
-          <div class="cmd-line-name">${f}</div>
-        </div>
-        <div style="font-weight:700;color:var(--warning);font-size:.95rem">${n} seau${n>1?'x':''}</div>
-      </div>`).join('')
+  // Cartes stock par type
+  const stockCards=SEAU_TYPES.map(t=>{
+    const d=totalDehors[t.id];
+    return `<div class="cmd-card" style="flex:1;margin-bottom:0;padding:12px 10px;text-align:center;border-top:3px solid ${t.color}">
+      <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);font-weight:600">${t.label}</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:1.7rem;color:${t.color}">${stock[t.id]}</div>
+      <div style="font-size:.68rem;color:var(--text2)">au dépôt</div>
+      ${d>0?`<div style="font-size:.72rem;color:var(--warning);font-weight:600;margin-top:3px">${d} dehors</div>`:'<div style="font-size:.72rem;color:var(--text2);margin-top:3px">—</div>'}
+    </div>`;
+  }).join('');
+
+  // Section dehors par fleuriste
+  const dehorsHTML=dehorsList.length>0
+    ? dehorsList.map(x=>{
+        const badges=SEAU_TYPES.filter(t=>x.types[t.id]>0).map(t=>
+          `<span style="background:${t.color};color:#fff;border-radius:10px;padding:2px 8px;font-size:.72rem;font-weight:600;white-space:nowrap">${x.types[t.id]} ${t.label}</span>`
+        ).join(' ');
+        return `<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border)">
+          <div style="flex:1;font-weight:600;font-size:.9rem">${x.f}</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">${badges}</div>
+        </div>`;
+      }).join('')
     : '<div class="empty" style="padding:14px 0">Aucun seau dehors 🎉</div>';
 
-  const histHTML=mouvements.slice(0,30).map(m=>{
-    const isOut=m.type==='sortie';
+  // Historique
+  const histHTML=mouvements.slice(0,40).map(m=>{
+    const isOut=m.sens==='sortie';
+    const t=SEAU_TYPES.find(x=>x.id===m.type)||SEAU_TYPES[0];
+    const realIdx=(seaux.mouvements||[]).indexOf(m);
     return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:.83rem">
       <span style="font-size:1rem">${isOut?'📤':'📥'}</span>
-      <div style="flex:1">
+      <div style="flex:1;min-width:0">
         <span style="font-weight:600;color:${isOut?'var(--warning)':'var(--accent)'}">${isOut?'Sortie':'Retour'} ${m.qty}</span>
-        ${m.fleuriste?`<span style="color:var(--text2)"> · ${m.fleuriste}</span>`:''}
+        <span style="background:${t.color};color:#fff;border-radius:8px;padding:1px 6px;font-size:.68rem;margin:0 4px">${t.label}</span>
+        ${m.fleuriste?`<span style="color:var(--text2)">${m.fleuriste}</span>`:''}
       </div>
-      <span style="font-size:.72rem;color:var(--text2)">${m.date}</span>
-      <button onclick="window._delMouvement(${(seaux.mouvements||[]).indexOf(m)})" style="background:none;border:none;color:#ccc;font-size:.8rem;cursor:pointer;padding:0 2px">✕</button>
+      <span style="font-size:.7rem;color:var(--text2);white-space:nowrap">${m.date}</span>
+      <button onclick="window._delMouvement(${realIdx})" style="background:none;border:none;color:#ccc;font-size:.8rem;cursor:pointer;padding:0 2px">✕</button>
     </div>`;
   }).join('');
 
   return `
-    <div style="display:flex;gap:10px;margin-bottom:14px">
-      <div class="cmd-card" style="flex:1;margin-bottom:0;text-align:center">
-        <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--text2)">Au dépôt</div>
-        <div style="font-family:'DM Serif Display',serif;font-size:2rem;color:var(--accent)">${total}</div>
-        <div style="font-size:.72rem;color:var(--text2)">seaux dispo</div>
-      </div>
-      <div class="cmd-card" style="flex:1;margin-bottom:0;text-align:center">
-        <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--text2)">Dehors</div>
-        <div style="font-family:'DM Serif Display',serif;font-size:2rem;color:var(--warning)">${totalDehors}</div>
-        <div style="font-size:.72rem;color:var(--text2)">chez fleuristes</div>
-      </div>
-    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">${stockCards}</div>
 
     <div class="cmd-card">
       <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--text2);margin-bottom:10px">Enregistrer un mouvement</div>
-      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
-        <input id="seauQty" type="number" min="1" value="1" inputmode="numeric" style="width:60px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:1rem;font-weight:700;text-align:center;background:var(--bg);color:var(--text);-moz-appearance:textfield;appearance:textfield">
-        <span style="font-size:.85rem;color:var(--text2)">seau(x)</span>
-        <input id="seauFleuriste" list="floristNames" placeholder="Fleuriste (optionnel)" style="flex:1;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;background:var(--surface);color:var(--text)">
+      <div style="display:flex;gap:5px;margin-bottom:10px">
+        ${SEAU_TYPES.map(t=>`<button onclick="window._selSeauType('${t.id}')" id="seauType_${t.id}" style="flex:1;padding:9px;border-radius:9px;border:2px solid ${state._seauType===t.id?t.color:'var(--border)'};background:${state._seauType===t.id?t.color:'transparent'};color:${state._seauType===t.id?'#fff':'var(--text2)'};font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer">${t.label}</button>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px">
+        <input id="seauQty" type="number" min="1" value="1" inputmode="numeric" style="width:56px;padding:9px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:1rem;font-weight:700;text-align:center;background:var(--bg);color:var(--text);-moz-appearance:textfield;appearance:textfield">
+        <input id="seauFleuriste" list="floristNames" placeholder="Fleuriste (obligatoire pour sortie)" style="flex:1;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;background:var(--surface);color:var(--text)">
         <datalist id="floristNames">${floristOpts}</datalist>
       </div>
       <div style="display:flex;gap:6px">
@@ -961,7 +1015,8 @@ function buildSeaux(){
 
     <div class="cmd-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--text2)">Seaux dehors par fleuriste</span>
+        <span style="font-size:.72rem;text-transform:uppercase;letter-spacing:.8px;color:var(--text2)">Dehors par fleuriste</span>
+        ${dehorsList.length>0?`<span style="font-size:.72rem;color:var(--warning);font-weight:600">${totalDehors.procona} Procona dehors</span>`:''}
       </div>
       ${dehorsHTML}
     </div>
@@ -975,42 +1030,55 @@ function buildSeaux(){
     </div>`;
 }
 
-window._seauMouv=function(type){
+window._selSeauType=function(t){state._seauType=t;renderMain();};
+
+window._seauMouv=function(sens){
+  migrateSeaux();
+  const type=state._seauType||'procona';
   const qty=parseInt(document.getElementById('seauQty').value)||0;
   if(qty<=0)return;
   const fleuriste=document.getElementById('seauFleuriste').value.trim();
-  if(!state.seaux) state.seaux={total:0,mouvements:[]};
-  if(!state.seaux.mouvements) state.seaux.mouvements=[];
+  if(sens==='sortie' && !fleuriste){
+    alert('Choisis un fleuriste pour une sortie (nécessaire pour suivre les retours).');
+    return;
+  }
   const now=new Date();
   const date=now.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-  state.seaux.mouvements.push({date,type,qty,fleuriste});
-  // Mise à jour du stock au dépôt
-  if(type==='sortie') state.seaux.total=Math.max(0,(state.seaux.total||0)-qty);
-  else state.seaux.total=(state.seaux.total||0)+qty;
+  state.seaux.mouvements.push({date,sens,type,qty,fleuriste});
+  // Mise à jour stock dépôt
+  if(sens==='sortie') state.seaux.stock[type]=Math.max(0,(state.seaux.stock[type]||0)-qty);
+  else state.seaux.stock[type]=(state.seaux.stock[type]||0)+qty;
   pushToFirebase();renderMain();
-  showToast((type==='sortie'?'Sortie':'Retour')+' de '+qty+' seau(x)');
+  const tlabel=(SEAU_TYPES.find(x=>x.id===type)||{}).label;
+  showToast((sens==='sortie'?'Sortie':'Retour')+' '+qty+' '+tlabel);
 };
+
 window._delMouvement=function(idx){
-  if(!state.seaux||!state.seaux.mouvements)return;
+  migrateSeaux();
   const m=state.seaux.mouvements[idx];
   if(!m)return;
   if(!confirm('Supprimer ce mouvement ?'))return;
   // Annuler l'effet sur le stock
-  if(m.type==='sortie') state.seaux.total=(state.seaux.total||0)+m.qty;
-  else state.seaux.total=Math.max(0,(state.seaux.total||0)-m.qty);
+  if(m.sens==='sortie') state.seaux.stock[m.type]=(state.seaux.stock[m.type]||0)+m.qty;
+  else state.seaux.stock[m.type]=Math.max(0,(state.seaux.stock[m.type]||0)-m.qty);
   state.seaux.mouvements.splice(idx,1);
   pushToFirebase();renderMain();
 };
+
 window._setSeauStock=function(){
-  const cur=(state.seaux||{}).total||0;
-  const val=prompt('Nombre total de seaux au dépôt :',cur);
-  if(val===null)return;
-  const n=parseInt(val);
-  if(isNaN(n)||n<0)return;
-  if(!state.seaux) state.seaux={total:0,mouvements:[]};
-  state.seaux.total=n;
+  migrateSeaux();
+  const s=state.seaux.stock;
+  const p=prompt('Stock Procona au dépôt :',s.procona);
+  if(p===null)return;
+  const pe=prompt('Stock Petit au dépôt :',s.petit);
+  if(pe===null)return;
+  const c=prompt('Stock Carré au dépôt :',s.carre);
+  if(c===null)return;
+  s.procona=Math.max(0,parseInt(p)||0);
+  s.petit=Math.max(0,parseInt(pe)||0);
+  s.carre=Math.max(0,parseInt(c)||0);
   pushToFirebase();renderMain();
-  showToast('Stock ajusté à '+n+' seaux');
+  showToast('Stock dépôt ajusté');
 };
 
 // ── COMMANDES ─────────────────────────────────────────────────────────
@@ -1842,7 +1910,7 @@ function buildBackup(){
     <div class="save-section"><div class="save-title">⚠️ Réinitialisation</div>
     <button class="btn-reset" onclick="window._hard()">Réinitialiser complètement</button></div>`;
 }
-window._exp=function(){const blob=new Blob([JSON.stringify({flowers:state.flowers,florists:state.florists,sessions:state.sessions,dispo:state.dispo||{},commandes:state.commandes||{},sechees:state.sechees||[],seaux:state.seaux||{total:0,mouvements:[]}},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`mojo-${todayKey()}.json`;a.click();URL.revokeObjectURL(url);showToast('Téléchargé !');};
+window._exp=function(){const blob=new Blob([JSON.stringify({flowers:state.flowers,florists:state.florists,sessions:state.sessions,dispo:state.dispo||{},commandes:state.commandes||{},sechees:state.sechees||[],seaux:state.seaux||{stock:{procona:0,petit:0,carre:0},mouvements:[]}},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`mojo-${todayKey()}.json`;a.click();URL.revokeObjectURL(url);showToast('Téléchargé !');};
 window._importJSON=function(input){const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{try{const imp=JSON.parse(e.target.result);if(!imp.flowers||!imp.florists)throw new Error();if(confirm('Importer et écraser Firebase ?')){state.flowers=imp.flowers;state.florists=imp.florists;state.sessions=imp.sessions||{};pushToFirebase();renderMain();showToast('Importé !');}}catch(e){alert('Fichier invalide.');}};reader.readAsText(file);input.value='';};
 window._lock=function(){localStorage.removeItem('mojo_auth');document.getElementById('lockScreen').style.display='flex';};
 window._hard=function(){if(confirm('⚠️ Tout effacer y compris Firebase ?')){const s=defaultState();state.flowers=s.flowers;state.florists=s.florists;state.sessions={};pushToFirebase();renderMain();showToast('Réinitialisé');}};
