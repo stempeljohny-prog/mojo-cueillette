@@ -519,21 +519,27 @@ function setSessionPrice(floristId, flowerId, val){
   renderMain();
 }
 window.setSessionPrice=setSessionPrice;
-function floristTotal(floristId){
-  const fs=getFloristSession(state.activeSession, floristId);
-  let total=(state.flowers||[]).reduce((s,f)=>{
-    const vars=getFlowerVariants(f.id);
-    const price=getSessionPrice(floristId,f.id);
-    if(vars) return s+vars.reduce((vs,v)=>vs+(fs.quantities[v.id]||0)*price,0);
-    return s+(fs.quantities[f.id]||0)*price;
-  },0);
-  // Ajouter les dupes
-  Object.keys(fs.dupes||{}).forEach(k=>{
-    const dupe=fs.dupes[k];
-    const price=(fs.prices&&fs.prices[k]!=null)?fs.prices[k]:dupe.price;
-    total+=(fs.quantities[k]||0)*price;
+// Resolve every harvested line for one session, including variants and duplicates.
+function harvestItems(fs){
+  const qty=fs.quantities||{}, prices=fs.prices||{}, items=[];
+  function add(id,name,price,modified){
+    const quantity=qty[id]||0;
+    if(quantity>0) items.push({id,name,price,quantity,modified});
+  }
+  (state.flowers||[]).forEach(f=>{
+    const price=prices[f.id]!=null?prices[f.id]:f.price;
+    if(f.variants&&f.variants.length){
+      f.variants.forEach(v=>add(v.id,f.name+' — '+v.name,price,prices[f.id]!=null));
+    }else add(f.id,f.name,price,prices[f.id]!=null);
   });
-  return total;
+  Object.entries(fs.dupes||{}).forEach(([id,f])=>{
+    add(id,f.name,prices[id]!=null?prices[id]:f.price,true);
+  });
+  return items;
+}
+function floristTotal(floristId){
+  return harvestItems(getFloristSession(state.activeSession,floristId))
+    .reduce((sum,item)=>sum+item.quantity*item.price,0);
 }
 
 // Fleurs sélectionnées pour ce fleuriste, dans leur ordre
@@ -596,12 +602,12 @@ const APP_PAGES={harvest:['Cueillette','Les fleurs du jour, pour chaque fleurist
 const ICON_PATHS={harvest:'<path d="M12 21v-9m0 4C4 16 3 10 3 5c6 0 9 3 9 7m0 1c0-6 4-9 9-10 0 7-3 11-9 11"/>',commandes:'<rect x="5" y="4" width="14" height="17" rx="3"/><path d="M9 4V2h6v2M9 10h6M9 14h6M9 18h3"/>',dispo:'<path d="m3 7 9-5 9 5v10l-9 5-9-5ZM3 7l9 5 9-5M12 12v10M7 5l10 5"/>',more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',seaux:'<path d="M4 7h16l-2 14H6ZM7 7V5a5 5 0 0 1 10 0v2"/>',summary:'<path d="M4 3v18h17M8 17v-5M13 17V8M18 17V4"/>',catalog:'<path d="M12 22v-8m-3 5 3 2 4-3"/><circle cx="12" cy="8" r="3"/><path d="M9 5C4-2 1 6 6 8c-5 3 0 9 4 4 3 6 9 2 6-2 7-1 4-8-1-5-1-6-7-5-6 0"/>',florists:'<circle cx="9" cy="7" r="4"/><path d="M2 21v-3a7 7 0 0 1 14 0v3M17 4a4 4 0 0 1 0 8m2 3a6 6 0 0 1 3 6"/>',backup:'<path d="M5 3h12l4 4v14H3V3ZM7 3v6h10V3M7 21v-8h10v8"/>'};
 function appIcon(id){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICON_PATHS[id]||ICON_PATHS.more)+'</svg>';}
 function renderTabs(){
- const primary=['harvest','commandes','dispo'];
- document.getElementById('tabBar').innerHTML=primary.map(id=>`<button class="nav-item ${state.activeTab===id?'active':''}" ${state.activeTab===id?'aria-current="page"':''} onclick="window._tab('${id}')">${appIcon(id)}<span>${id==='dispo'?'Dispo':APP_PAGES[id][0]}</span></button>`).join('')+`<button id="moreBtn" class="nav-item ${primary.includes(state.activeTab)?'':'more-active'}" aria-haspopup="dialog" onclick="window._toggleMenu()">${appIcon('more')}<span>Plus</span></button>`;
+ const primary=['harvest','commandes','summary','dispo'];
+ document.getElementById('tabBar').innerHTML=primary.map(id=>`<button class="nav-item ${state.activeTab===id?'active':''}" ${state.activeTab===id?'aria-current="page"':''} onclick="window._tab('${id}')">${appIcon(id)}<span>${id==='dispo'?'Dispo':id==='summary'?'Récap':APP_PAGES[id][0]}</span></button>`).join('')+`<button id="moreBtn" class="nav-item ${primary.includes(state.activeTab)?'':'more-active'}" aria-haspopup="dialog" onclick="window._toggleMenu()">${appIcon('more')}<span>Plus</span></button>`;
 }
 window._toggleMenu=function(){
  const sheet=document.getElementById('moreSheet');
- sheet.innerHTML='<div class="sheet-grip"></div><div class="sheet-head"><h2 id="moreTitle">Votre espace Mojo</h2><button class="sheet-close" aria-label="Fermer le menu" onclick="document.getElementById(\'moreSheet\').close()">×</button></div>'+['seaux','summary','catalog','florists','backup'].map(id=>`<button class="menu-entry ${state.activeTab===id?'selected':''}" onclick="window._tab('${id}')">${appIcon(id)}<span><strong>${APP_PAGES[id][0]}</strong><small>${APP_PAGES[id][1]}</small></span><span class="arrow">›</span></button>`).join('');
+ sheet.innerHTML='<div class="sheet-grip"></div><div class="sheet-head"><h2 id="moreTitle">Votre espace Mojo</h2><button class="sheet-close" aria-label="Fermer le menu" onclick="document.getElementById(\'moreSheet\').close()">×</button></div>'+['seaux','catalog','florists','backup'].map(id=>`<button class="menu-entry ${state.activeTab===id?'selected':''}" onclick="window._tab('${id}')">${appIcon(id)}<span><strong>${APP_PAGES[id][0]}</strong><small>${APP_PAGES[id][1]}</small></span><span class="arrow">›</span></button>`).join('');
  sheet.showModal();
 };
 document.getElementById('moreSheet').addEventListener('click',e=>{const r=e.currentTarget.getBoundingClientRect();if(e.target===e.currentTarget&&(e.clientY<r.top||e.clientX<r.left||e.clientX>r.right||e.clientY>r.bottom))e.currentTarget.close();});
@@ -1787,20 +1793,15 @@ function buildSummary(){
     const sessDate=state.sessions[dk]||{};
     const fd=(state.florists||[]).map(c=>{
       const fs=sessDate[c.id]||{quantities:{}};
-      const qty=fs.quantities||{};
-      const fsPrices=(sessDate[c.id]||{}).prices||{};
-      const items=(state.flowers||[]).filter(f=>(qty[f.id]||0)>0);
-      const total=(state.flowers||[]).reduce((s,f)=>{
-        const p=fsPrices[f.id]!=null?fsPrices[f.id]:f.price;
-        return s+(qty[f.id]||0)*p;
-      },0);
-      return{c,items,total,qty,fsPrices};
-    }).filter(x=>x.total>0);
+      const items=harvestItems(fs);
+      const total=items.reduce((sum,item)=>sum+item.quantity*item.price,0);
+      return{c,items,total};
+    }).filter(x=>x.items.length>0);
     if(!fd.length)return;hasAny=true;
     const grand=fd.reduce((s,x)=>s+x.total,0);
     html+=`<div style="margin-bottom:20px">
       <div style="font-family:'DM Serif Display',serif;font-size:1rem;margin-bottom:8px;color:var(--text2)">${formatDateKey(dk)} — <strong style="color:var(--text)">${grand.toFixed(2)} €</strong></div>
-      ${fd.map(({c,items,total,qty,fsPrices})=>{const b=c.budget||0,pct=b>0?Math.min((total/b)*100,100):0,bc=total>b?'over':total>b*.85?'warn':'';return`<div class="summary-florist"><div class="sf-name">${c.name}<span class="sf-total">${total.toFixed(2)} €${b>0?' / '+b.toFixed(0)+' €':''}</span></div>${items.map(f=>{const q=qty[f.id]||0;const p=fsPrices[f.id]!=null?fsPrices[f.id]:f.price;return`<div class="sf-row"><span>${f.name} × ${q}${fsPrices[f.id]!=null?' <span style="font-size:.7rem;color:var(--warning)">✎'+p.toFixed(2)+'€</span>':''}</span><span>${(q*p).toFixed(2)} €</span></div>`;}).join('')}${b>0?`<div class="sf-budget-bar"><div class="sf-budget-fill ${bc}" style="width:${pct}%"></div></div>`:''}</div>`;}).join('')}
+      ${fd.map(({c,items,total})=>{const b=c.budget||0,pct=b>0?Math.min((total/b)*100,100):0,bc=total>b?'over':total>b*.85?'warn':'';return`<div class="summary-florist"><div class="sf-name">${c.name}<span class="sf-total">${total.toFixed(2)} €${b>0?' / '+b.toFixed(0)+' €':''}</span></div>${items.map(f=>{const q=f.quantity,p=f.price;return`<div class="sf-row"><span>${f.name} × ${q}${f.modified?' <span style="font-size:.7rem;color:var(--warning)">✎'+p.toFixed(2)+'€</span>':''}</span><span>${(q*p).toFixed(2)} €</span></div>`;}).join('')}${b>0?`<div class="sf-budget-bar"><div class="sf-budget-fill ${bc}" style="width:${pct}%"></div></div>`:''}</div>`;}).join('')}
     </div>`;
   });
   // Commandes terminées
@@ -1827,11 +1828,10 @@ function buildSummary(){
 window._share=function(){
   const sessDate=state.sessions[state.activeSession]||{};
   const lines=(state.florists||[]).map(c=>{
-    const fs=sessDate[c.id]||{quantities:{}};const qty=fs.quantities||{};
-    const items=(state.flowers||[]).filter(f=>(qty[f.id]||0)>0);
+    const items=harvestItems(sessDate[c.id]||{});
     if(!items.length)return null;
-    const total=items.reduce((s,f)=>s+(qty[f.id]||0)*f.price,0);
-    return`${c.name}\n${items.map(f=>`  ${f.name} × ${qty[f.id]} = ${(qty[f.id]*f.price).toFixed(2)}€`).join('\n')}\nTotal: ${total.toFixed(2)}€`;
+    const total=items.reduce((sum,f)=>sum+f.quantity*f.price,0);
+    return`${c.name}\n${items.map(f=>`  ${f.name} × ${f.quantity} = ${(f.quantity*f.price).toFixed(2)}€`).join('\n')}\nTotal: ${total.toFixed(2)}€`;
   }).filter(Boolean);
   const txt=`Cueillette ${formatDateKey(state.activeSession)}\n\n${lines.join('\n\n')}`;
   if(navigator.share)navigator.share({title:'Cueillette Mojo',text:txt});
